@@ -2,355 +2,66 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>INADI - Recursos V2</title>
 
-  <style>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SECURITY HEADERS (via meta — GitHub Pages no soporta HTTP headers)
+       ═══════════════════════════════════════════════════════════════════ -->
 
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:"Segoe UI", sans-serif;
-    }
+  <!-- Content Security Policy:
+       - default-src 'self'              → bloquea recursos de orígenes no listados
+       - script-src 'self'               → solo scripts propios (config.js, app.js)
+       - style-src  'self'               → solo hojas de estilo propias
+       - connect-src script.google.com   → permite fetch solo al backend autorizado
+       - img-src 'self'                  → solo imágenes propias
+       - object-src 'none'              → bloquea <object>, <embed>, <applet>
+       - base-uri 'self'                → previene inyección de <base href>
+       - form-action 'self'             → previene exfiltración via forms
+       - frame-ancestors 'none'         → anti-clickjacking (más fuerte que X-Frame-Options)
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src  'self';
+    style-src   'self';
+    connect-src https://script.google.com;
+    img-src     'self' data:;
+    object-src  'none';
+    base-uri    'self';
+    form-action 'self';
+    frame-ancestors 'none';
+  ">
 
-    body{
-      min-height:100vh;
-      background:
-      radial-gradient(circle at top, rgba(140,120,255,0.25), transparent 35%),
-      linear-gradient(135deg,#09111f,#121c3b,#1f2d6b);
-      color:white;
-      overflow-x:hidden;
-    }
+  <!-- Anti-clickjacking fallback para navegadores sin soporte CSP frame-ancestors -->
+  <meta http-equiv="X-Frame-Options" content="DENY">
 
-    .hidden{
-      display:none !important;
-    }
+  <!-- Previene MIME sniffing (content-type confusion attacks) -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
-    /* LOGIN */
+  <!-- Referrer: no enviar URL al navegar a recursos externos -->
+  <meta name="referrer" content="no-referrer">
 
-    #loginScreen{
-      width:100%;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    }
+  <!-- Deshabilitar APIs de hardware innecesarias -->
+  <meta http-equiv="Permissions-Policy"
+        content="geolocation=(), microphone=(), camera=(), payment=(), usb=()">
 
-    .login-card{
-      width:100%;
-      max-width:430px;
-      background:rgba(255,255,255,0.08);
-      backdrop-filter:blur(12px);
-      border:1px solid rgba(255,255,255,0.1);
-      border-radius:28px;
-      padding:40px;
-      box-shadow:0 20px 45px rgba(0,0,0,0.45);
-      animation:fadeIn 0.5s ease;
-    }
+  <!-- Cache: no almacenar en caché (protege sesiones en equipos compartidos) -->
+  <meta http-equiv="Cache-Control" content="no-store">
+  <meta http-equiv="Pragma"        content="no-cache">
+  <meta http-equiv="Expires"       content="0">
 
-    .logo{
-      width:190px;
-      display:block;
-      margin:0 auto 20px;
-      filter:drop-shadow(0 0 25px rgba(255,255,255,0.15));
-    }
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SEO / META
+       ═══════════════════════════════════════════════════════════════════ -->
+  <meta name="description" content="Portal de recursos educativos INADI - GameMaker">
+  <meta name="robots"      content="noindex, nofollow">
 
-    h1{
-      text-align:center;
-      font-size:2.2rem;
-      margin-bottom:10px;
-    }
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ESTILOS
+       ═══════════════════════════════════════════════════════════════════ -->
+  <link rel="stylesheet" href="styles.css">
 
-    .subtitle{
-      text-align:center;
-      opacity:0.75;
-      margin-bottom:30px;
-    }
-
-    .input-group{
-      margin-bottom:20px;
-    }
-
-    .input-group label{
-      display:block;
-      margin-bottom:10px;
-      font-size:0.95rem;
-    }
-
-    .input-group input{
-      width:100%;
-      padding:15px;
-      border-radius:16px;
-      border:none;
-      outline:none;
-      color:white;
-      font-size:1rem;
-      background:rgba(255,255,255,0.08);
-      border:1px solid transparent;
-      transition:0.3s;
-    }
-
-    .input-group input:focus{
-      border-color:#8f8dff;
-      background:rgba(255,255,255,0.12);
-    }
-
-    .login-error{
-      margin-top:10px;
-      color:#ff8f8f;
-      font-size:0.92rem;
-      display:none;
-      animation:fadeError 0.25s ease;
-    }
-
-    .btn{
-      width:100%;
-      padding:15px;
-      border:none;
-      border-radius:18px;
-      background:linear-gradient(135deg,#6376ff,#927bff);
-      color:white;
-      font-size:1rem;
-      font-weight:bold;
-      cursor:pointer;
-      transition:0.25s;
-    }
-
-    .btn:hover{
-      transform:translateY(-2px);
-      box-shadow:0 12px 28px rgba(124,109,255,0.45);
-    }
-
-    .members{
-      margin-top:25px;
-      text-align:center;
-      opacity:0.65;
-      font-size:0.83rem;
-      line-height:1.5;
-    }
-
-    /* PANEL */
-
-    #panel{
-      min-height:100vh;
-      padding:40px;
-    }
-
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      flex-wrap:wrap;
-      gap:20px;
-      margin-bottom:45px;
-    }
-
-    .welcome{
-      display:flex;
-      align-items:center;
-      gap:18px;
-    }
-
-    .welcome img{
-      width:90px;
-    }
-
-    .welcome h2{
-      font-size:2rem;
-    }
-
-    .badge{
-      display:inline-block;
-      margin-top:8px;
-      padding:8px 14px;
-      border-radius:999px;
-      background:rgba(255,255,255,0.1);
-      font-size:0.85rem;
-    }
-
-    .logout{
-      padding:13px 18px;
-      border:none;
-      border-radius:16px;
-      background:rgba(255,255,255,0.1);
-      color:white;
-      cursor:pointer;
-      transition:0.25s;
-    }
-
-    .logout:hover{
-      background:rgba(255,255,255,0.18);
-    }
-
-    .resources-container{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-      gap:20px;
-    }
-
-    .resource-card{
-      background:rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.1);
-      border-radius:24px;
-      padding:25px;
-      backdrop-filter:blur(10px);
-      transition:0.3s;
-      position:relative;
-      overflow:hidden;
-    }
-
-    .resource-card:hover{
-      transform:translateY(-6px);
-      box-shadow:0 18px 35px rgba(0,0,0,0.35);
-    }
-
-    .resource-card::before{
-      content:"";
-      position:absolute;
-      width:160px;
-      height:160px;
-      background:rgba(255,255,255,0.04);
-      border-radius:50%;
-      top:-70px;
-      right:-70px;
-    }
-
-    .resource-card h3{
-      margin-bottom:18px;
-      font-size:1.15rem;
-      position:relative;
-      z-index:1;
-    }
-
-    .resource-card a{
-      display:inline-block;
-      text-decoration:none;
-      color:white;
-      padding:12px 16px;
-      border-radius:14px;
-      background:linear-gradient(135deg,#6173ff,#8f78ff);
-      font-weight:bold;
-      transition:0.2s;
-      position:relative;
-      z-index:1;
-    }
-
-    .resource-card a:hover{
-      transform:scale(1.03);
-    }
-
-    .empty{
-      text-align:center;
-      opacity:0.7;
-      padding:90px 20px;
-      font-size:1.1rem;
-    }
-
-    .add-btn{
-      position:fixed;
-      bottom:30px;
-      right:30px;
-      width:72px;
-      height:72px;
-      border:none;
-      border-radius:50%;
-      background:linear-gradient(135deg,#6675ff,#9a7cff);
-      color:white;
-      font-size:2rem;
-      cursor:pointer;
-      transition:0.25s;
-      box-shadow:0 18px 35px rgba(0,0,0,0.4);
-    }
-
-    .add-btn:hover{
-      transform:scale(1.08);
-    }
-
-    /* MODAL */
-
-    .modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.6);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-      z-index:1000;
-    }
-
-    .modal-content{
-      width:100%;
-      max-width:460px;
-      background:#121c3b;
-      border-radius:28px;
-      padding:30px;
-      border:1px solid rgba(255,255,255,0.1);
-      animation:fadeIn 0.25s ease;
-    }
-
-    .modal-content h3{
-      text-align:center;
-      margin-bottom:25px;
-      font-size:1.5rem;
-    }
-
-    .modal-buttons{
-      display:flex;
-      gap:12px;
-      margin-top:20px;
-    }
-
-    .secondary{
-      background:rgba(255,255,255,0.1);
-    }
-
-    @keyframes fadeIn{
-      from{
-        opacity:0;
-        transform:translateY(10px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
-
-    @keyframes fadeError{
-      from{
-        opacity:0;
-        transform:translateY(-4px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
-
-    @media(max-width:650px){
-
-      #panel{
-        padding:20px;
-      }
-
-      .welcome h2{
-        font-size:1.4rem;
-      }
-
-      .topbar{
-        align-items:flex-start;
-      }
-
-    }
-
-  </style>
 </head>
-
 <body>
 
   <!-- LOGIN -->
@@ -359,7 +70,7 @@
 
     <div class="login-card">
 
-      <img src="Logo Inadi con Brillo.png" class="logo">
+      <img src="Logo Inadi con Brillo.png" class="logo" alt="Logo INADI">
 
       <h1>GAMEMAKER</h1>
 
@@ -369,26 +80,28 @@
 
       <div class="input-group">
 
-        <label>Nombre y apellido</label>
+        <label for="username">Nombre y apellido</label>
 
         <input
           type="text"
           id="username"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
           placeholder="Ej: Lucas Rangel"
+          maxlength="80"
         >
 
-        <div id="loginError" class="login-error">
-          Usuario no autorizado.
-        </div>
+        <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
 
       </div>
 
-      <button class="btn" onclick="login()">
+      <button class="btn" id="loginBtn" onclick="login()">
         Ingresar
       </button>
 
       <div class="members">
-        Ingresa con tu nombre y apellido para iniciar
+        Ingresá con tu nombre y apellido para iniciar
       </div>
 
     </div>
@@ -403,7 +116,7 @@
 
       <div class="welcome">
 
-        <img src="Logo Inadi con Brillo.png">
+        <img src="Logo Inadi con Brillo.png" alt="Logo INADI">
 
         <div>
           <h2 id="welcomeText"></h2>
@@ -418,10 +131,7 @@
 
     </div>
 
-    <div
-      id="resourcesContainer"
-      class="resources-container">
-    </div>
+    <div id="resourcesContainer" class="resources-container"></div>
 
     <div id="emptyMessage" class="empty">
       No hay recursos agregados todavía.
@@ -430,7 +140,8 @@
     <button
       id="addButton"
       class="add-btn hidden"
-      onclick="openModal()">
+      onclick="openModal()"
+      aria-label="Agregar recurso">
       +
     </button>
 
@@ -438,47 +149,43 @@
 
   <!-- MODAL -->
 
-  <div id="modal" class="modal hidden">
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
 
     <div class="modal-content">
 
-      <h3>Agregar recurso</h3>
+      <h3 id="modalTitle">Agregar recurso</h3>
 
       <div class="input-group">
-
-        <label>Nombre del recurso</label>
-
+        <label for="resourceName">Nombre del recurso</label>
         <input
           type="text"
           id="resourceName"
           placeholder="Ej: Tutorial GameMaker"
+          maxlength="120"
+          autocomplete="off"
         >
-
       </div>
 
       <div class="input-group">
-
-        <label>Link</label>
-
+        <label for="resourceLink">Link</label>
         <input
-          type="text"
+          type="url"
           id="resourceLink"
           placeholder="https://..."
+          maxlength="2048"
+          autocomplete="off"
         >
-
       </div>
+
+      <div id="modalError" class="modal-error" role="alert" aria-live="polite"></div>
 
       <div class="modal-buttons">
 
-        <button
-          class="btn secondary"
-          onclick="closeModal()">
+        <button class="btn secondary" onclick="closeModal()">
           Cancelar
         </button>
 
-        <button
-          class="btn"
-          onclick="addResource()">
+        <button class="btn" onclick="addResource()">
           Guardar
         </button>
 
@@ -488,217 +195,12 @@
 
   </div>
 
-<script>
-
-  const allowedUsers = [
-
-    "Luciano Alves",
-    "Agustin Minelli",
-    "Augusto Lairihoy",
-    "Vicente Finozzi",
-    "Tomás Machiavello",
-    "Elías Escobar",
-    "Valentino Perez",
-    "Thiago Balleteros",
-    "Franco Teixeira",
-    "Carlos Villaruel",
-    "55746049"
-
-  ];
-
-  const API_URL =
-  "https://script.google.com/macros/s/AKfycbxzmZ9BEpkGVU9M2jcny6n46_c6KT-mlxVfAPPfs5Vh1ZwlKhhIonWmsuFNX9eCSoHH/exec";
-
-  let currentUser = "";
-  let resources = [];
-
-  async function loadResources(){
-
-    try{
-
-      const response =
-        await fetch(API_URL);
-
-      resources =
-        await response.json();
-
-      renderResources();
-
-    }catch(error){
-
-      console.error(error);
-
-    }
-
-  }
-
-  function login(){
-
-    const username =
-      document.getElementById("username")
-      .value
-      .trim();
-
-    const error =
-      document.getElementById("loginError");
-
-    if(!allowedUsers.includes(username)){
-
-      error.style.display = "block";
-
-      return;
-    }
-
-    error.style.display = "none";
-
-    currentUser = username;
-
-    document.getElementById("loginScreen")
-      .classList.add("hidden");
-
-    document.getElementById("panel")
-      .classList.remove("hidden");
-
-    document.getElementById("welcomeText")
-      .innerText =
-      `Bienvenido, ${username}`;
-
-    const isAdmin =
-      username === "55746049";
-
-    document.getElementById("roleBadge")
-      .innerText =
-      isAdmin
-      ? "Administrador"
-      : "Estudiante";
-
-    if(isAdmin){
-
-      document.getElementById("addButton")
-        .classList.remove("hidden");
-    }
-
-    loadResources();
-  }
-
-  function logout(){
-
-    currentUser = "";
-
-    document.getElementById("panel")
-      .classList.add("hidden");
-
-    document.getElementById("loginScreen")
-      .classList.remove("hidden");
-
-    document.getElementById("username").value = "";
-
-    document.getElementById("addButton")
-      .classList.add("hidden");
-  }
-
-  function renderResources(){
-
-    const container =
-      document.getElementById("resourcesContainer");
-
-    const empty =
-      document.getElementById("emptyMessage");
-
-    container.innerHTML = "";
-
-    if(resources.length === 0){
-
-      empty.style.display = "block";
-
-      return;
-    }
-
-    empty.style.display = "none";
-
-    resources.forEach(resource => {
-
-      const card =
-        document.createElement("div");
-
-      card.className = "resource-card";
-
-      card.innerHTML = `
-        <h3>${resource.nombre}</h3>
-
-        <a href="${resource.link}" target="_blank">
-          Abrir recurso
-        </a>
-      `;
-
-      container.appendChild(card);
-
-    });
-
-  }
-
-  function openModal(){
-
-    document.getElementById("modal")
-      .classList.remove("hidden");
-  }
-
-  function closeModal(){
-
-    document.getElementById("modal")
-      .classList.add("hidden");
-
-    document.getElementById("resourceName").value = "";
-    document.getElementById("resourceLink").value = "";
-  }
-
-  async function addResource(){
-
-    const name =
-      document.getElementById("resourceName")
-      .value
-      .trim();
-
-    const link =
-      document.getElementById("resourceLink")
-      .value
-      .trim();
-
-    if(name === "" || link === ""){
-
-      alert("Completa todos los campos.");
-
-      return;
-    }
-
-    try{
-
-      await fetch(API_URL, {
-
-        method:"POST",
-
-        body: JSON.stringify({
-          nombre:name,
-          link:link
-        })
-
-      });
-
-      closeModal();
-
-      loadResources();
-
-    }catch(error){
-
-      console.error(error);
-
-      alert("Error al guardar el recurso.");
-
-    }
-
-  }
-
-</script>
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SCRIPTS — cargados al final, sin inline JS
+       config.js primero (define _cfg), luego app.js (lo consume)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 
 </body>
 </html>
