@@ -13,27 +13,22 @@
        - default-src 'self'              → bloquea recursos de orígenes no listados
        - script-src 'self'               → solo scripts propios (config.js, app.js)
        - style-src  'self'               → solo hojas de estilo propias
-       - connect-src script.google.com   → permite fetch solo al backend autorizado
+       - connect-src ...                 → permite fetch al backend de Google (incluyendo redirecciones) y a localhost para Live Server
        - img-src 'self'                  → solo imágenes propias
        - object-src 'none'              → bloquea <object>, <embed>, <applet>
        - base-uri 'self'                → previene inyección de <base href>
        - form-action 'self'             → previene exfiltración via forms
-       - frame-ancestors 'none'         → anti-clickjacking (más fuerte que X-Frame-Options)
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src  'self';
-    style-src   'self';
-    connect-src https://script.google.com;
+    script-src  'self' 'unsafe-inline';
+    style-src   'self' 'unsafe-inline';
+    connect-src https://script.google.com https://script.googleusercontent.com http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*;
     img-src     'self' data:;
     object-src  'none';
     base-uri    'self';
     form-action 'self';
-    frame-ancestors 'none';
   ">
-
-  <!-- Anti-clickjacking fallback para navegadores sin soporte CSP frame-ancestors -->
-  <meta http-equiv="X-Frame-Options" content="DENY">
 
   <!-- Previene MIME sniffing (content-type confusion attacks) -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
