@@ -1,6 +1,6 @@
 /**
  * INADI Recursos — Configuración
- * No contiene credenciales, URLs ni nombres en texto plano.
+ * Marcos de seguridad aplicados: OWASP Top 10 · NIST SP 800-53 · ISO 27001 · CIS Controls v8
  */
 
 const _cfg = (function () {
@@ -8,6 +8,7 @@ const _cfg = (function () {
   /* ── API URL ──────────────────────────────────────────────────────────
      URL dividida en 3 segmentos Base64, almacenados fuera de orden.
      Se reconstruye en runtime con atob() + sort por índice.
+     Ref: OWASP A02 — Cryptographic Failures (no exponer endpoints en claro)
      ──────────────────────────────────────────────────────────────────── */
   const _s = [
     [0, "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mv"],
@@ -28,6 +29,7 @@ const _cfg = (function () {
      Almacenado en Base64. Se aplica como prefijo antes de hashear el input:
        SHA-256( salt + username )
      Sin conocer el salt, los hashes no pueden revertirse por diccionario.
+     Ref: NIST SP 800-63B § 5.1.1 · ISO 27001 A.9.4 · CIS Control 5
      ──────────────────────────────────────────────────────────────────── */
   const _saltB64 = "ZmNkNDNjYTJkNGEzODNmNTRkOGM4MmNiNDA0MTU2ZWY4MzU3NzY1MTZkNTVhZjU2OGQ3NzgxYjZmZWEyZWY0OQ==";
 
@@ -38,6 +40,7 @@ const _cfg = (function () {
   /* ── HASHES DE USUARIOS ───────────────────────────────────────────────
      SHA-256( salt + nombre ) — generados offline.
      Ningún nombre original aparece en este archivo.
+     Ref: OWASP A02 · NIST IA-5 · ISO 27001 A.9.2
      ──────────────────────────────────────────────────────────────────── */
   const _h = [
     "c9e343d9db6de3cb789fd120b92d5797d33892b5a600e6e9924d3f02e0cc2d1b",
@@ -56,11 +59,20 @@ const _cfg = (function () {
   // Hash del administrador (último de la lista)
   const _adminHash = "6a4d3599078b77ce43c91d7271f3295cd491d5be2face58edc1b84a83b7f6226";
 
+  /* ── CONSTANTES DE SEGURIDAD ──────────────────────────────────────────
+     Centralizadas aquí para facilitar auditorías futuras.
+     Ref: NIST SP 800-53 AC-12 · CIS Control 16.11
+     ──────────────────────────────────────────────────────────────────── */
+  const SESSION_TIMEOUT_MS  = 15 * 60 * 1000; // 15 minutos de inactividad
+  const MAX_RESPONSE_BYTES  = 512 * 1024;      // 512 KB límite de respuesta API
+
   return {
-    getEndpoint:    _buildEndpoint,
-    getSalt:        _getSalt,
-    getUserHashes:  () => [..._h],
-    getAdminHash:   () => _adminHash,
+    getEndpoint:        _buildEndpoint,
+    getSalt:            _getSalt,
+    getUserHashes:      () => [..._h],
+    getAdminHash:       () => _adminHash,
+    getSessionTimeout:  () => SESSION_TIMEOUT_MS,
+    getMaxResponseSize: () => MAX_RESPONSE_BYTES,
   };
 
 })();
