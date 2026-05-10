@@ -126,6 +126,24 @@ const Security = (function () {
 
 })();
 
+/* Animación de carga */
+function showSkeletons() {
+  const container = document.getElementById("resourcesContainer");
+
+  container.innerHTML = "";
+
+  for (let i = 0; i < 6; i++) {
+    container.innerHTML += `
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    `;
+  }
+}
+
 
 /* ════════════════════════════════════════════════════════════════════════
    FETCH CON TIMEOUT
@@ -274,6 +292,8 @@ async function loadResources() {
   const emptyEl = document.getElementById("emptyMessage");
   emptyEl.textContent   = "Cargando recursos…";
   emptyEl.style.display = "block";
+
+  showSkeletons();
 
   try {
     /* ── Fetch con timeout de 10 segundos ──────────────────────────── */

@@ -281,6 +281,78 @@ h1{
   transform:scale(1.08);
 }
 
+.skeleton-card {
+  background: linear-gradient(
+    145deg,
+    #1f1b4d,
+    #2b2d7a
+  );
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 14px;
+
+  overflow: hidden;
+  position: relative;
+
+  box-shadow:
+    0 0 12px rgba(110, 120, 255, 0.15),
+    inset 0 0 12px rgba(255,255,255,0.03);
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+
+  background: linear-gradient(
+    90deg,
+    #3730a3 0%,
+    #6d7dff 35%,
+    #d6d8ff 50%,
+    #6d7dff 65%,
+    #3730a3 100%
+  );
+
+  background-size: 250% 100%;
+
+  animation: shimmer 1.6s infinite ease-in-out;
+
+  opacity: 0.9;
+}
+
+.skeleton-line.title {
+  width: 75%;
+  height: 22px;
+}
+
+.skeleton-line.medium {
+  width: 60%;
+}
+
+.skeleton-line.short {
+  width: 35%;
+}
+
+@keyframes shimmer {
+
+  0% {
+    background-position: 200% 0;
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    background-position: -200% 0;
+    opacity: 0.7;
+  }
+}
+
 /* ── MODAL ─────────────────────────────────────────────── */
 
 .modal{
