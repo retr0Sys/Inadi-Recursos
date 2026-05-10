@@ -5,56 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>INADI - Recursos V2</title>
 
-  <!-- Google Fonts — Inter para legibilidad premium -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
   <!-- ═══════════════════════════════════════════════════════════════════
        SECURITY HEADERS (via meta — GitHub Pages no soporta HTTP headers)
        ═══════════════════════════════════════════════════════════════════ -->
 
-  <!-- Content Security Policy
-       OWASP A05 · NIST SI-10 · CIS Control 9
-       Cambios vs v1:
-         · Eliminado 'unsafe-inline' de script-src y style-src
-         · Agregado upgrade-insecure-requests (NIST SP 800-95)
-         · NOTA: frame-ancestors NO funciona via <meta>; se aplica solo
-                 via HTTP header. El frameGuard en JS cubre esta brecha.
+  <!-- Content Security Policy:
+       - default-src 'self'              → bloquea recursos de orígenes no listados
+       - script-src 'self'               → solo scripts propios (config.js, app.js)
+       - style-src  'self'               → solo hojas de estilo propias
+       - connect-src ...                 → permite fetch al backend de Google (incluyendo redirecciones) y a localhost para Live Server
+       - img-src 'self'                  → solo imágenes propias
+       - object-src 'none'              → bloquea <object>, <embed>, <applet>
+       - base-uri 'self'                → previene inyección de <base href>
+       - form-action 'self'             → previene exfiltración via forms
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src  'self';
-    style-src   'self' https://fonts.googleapis.com;
-    font-src    https://fonts.gstatic.com;
+    script-src  'self' 'unsafe-inline';
+    style-src   'self' 'unsafe-inline';
     connect-src https://script.google.com https://script.googleusercontent.com http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*;
     img-src     'self' data:;
     object-src  'none';
     base-uri    'self';
     form-action 'self';
-    upgrade-insecure-requests;
   ">
 
-  <!-- Previene MIME sniffing — OWASP A05 / NIST SI-3 -->
+  <!-- Previene MIME sniffing (content-type confusion attacks) -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
-  <!-- Anti-clickjacking redundante (frame-ancestors no aplica en meta) — CIS 12 -->
-  <meta http-equiv="X-Frame-Options" content="DENY">
-
-  <!-- Referrer: no enviar URL al navegar a recursos externos — ISO 27001 A.13 -->
+  <!-- Referrer: no enviar URL al navegar a recursos externos -->
   <meta name="referrer" content="no-referrer">
 
-  <!-- Deshabilitar APIs de hardware innecesarias — CIS Control 4 / NIST CM-7 -->
+  <!-- Deshabilitar APIs de hardware innecesarias -->
   <meta http-equiv="Permissions-Policy"
-        content="geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()">
+        content="geolocation=(), microphone=(), camera=(), payment=(), usb=()">
 
-  <!-- Cache: no almacenar en caché — NIST AC-12 / CIS Control 16 -->
+  <!-- Cache: no almacenar en caché (protege sesiones en equipos compartidos) -->
   <meta http-equiv="Cache-Control" content="no-store">
   <meta http-equiv="Pragma"        content="no-cache">
   <meta http-equiv="Expires"       content="0">
-
-  <!-- Cross-Origin Opener Policy — aislamiento de proceso — OWASP A05 -->
-  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
 
   <!-- ═══════════════════════════════════════════════════════════════════
        SEO / META
@@ -69,14 +58,6 @@
 
 </head>
 <body>
-
-  <!-- Fallback sin JavaScript — WCAG 2.1 / ISO 27001 A.18 -->
-  <noscript>
-    <div style="text-align:center;padding:60px;color:#fff;background:#09111f;min-height:100vh;font-family:sans-serif;">
-      <h1>JavaScript requerido</h1>
-      <p style="margin-top:16px;opacity:0.7;">Este portal requiere JavaScript para funcionar de forma segura. Activalo en tu navegador.</p>
-    </div>
-  </noscript>
 
   <!-- LOGIN -->
 
@@ -110,7 +91,7 @@
 
       </div>
 
-      <button class="btn" id="loginBtn">
+      <button class="btn" id="loginBtn" onclick="login()">
         Ingresar
       </button>
 
@@ -139,25 +120,10 @@
 
       </div>
 
-      <div class="topbar-right">
-        <span id="sessionTimer" class="session-timer" aria-live="polite" title="Tiempo de sesión restante"></span>
-        <button class="logout" id="logoutBtn">
-          Cerrar sesión
-        </button>
-      </div>
+      <button class="logout" onclick="logout()">
+        Cerrar sesión
+      </button>
 
-    </div>
-
-    <!-- Barra de búsqueda -->
-    <div class="search-wrapper">
-      <input
-        type="search"
-        id="searchInput"
-        placeholder="🔍  Buscar recursos…"
-        maxlength="120"
-        autocomplete="off"
-        aria-label="Buscar recursos"
-      >
     </div>
 
     <div id="resourcesContainer" class="resources-container"></div>
@@ -169,6 +135,7 @@
     <button
       id="addButton"
       class="add-btn hidden"
+      onclick="openModal()"
       aria-label="Agregar recurso">
       +
     </button>
@@ -209,11 +176,11 @@
 
       <div class="modal-buttons">
 
-        <button class="btn secondary" id="cancelBtn">
+        <button class="btn secondary" onclick="closeModal()">
           Cancelar
         </button>
 
-        <button class="btn" id="saveBtn">
+        <button class="btn" onclick="addResource()">
           Guardar
         </button>
 
@@ -222,9 +189,6 @@
     </div>
 
   </div>
-
-  <!-- Toast notifications container -->
-  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
   <!-- ═══════════════════════════════════════════════════════════════════
        SCRIPTS — cargados al final, sin inline JS
