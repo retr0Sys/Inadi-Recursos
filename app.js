@@ -132,7 +132,7 @@ function showSkeletons() {
 
   container.innerHTML = "";
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 10; i++) {
     container.innerHTML += `
       <div class="skeleton-card">
         <div class="skeleton-line title"></div>
@@ -258,9 +258,10 @@ async function login() {
 }
 
 function _applySession() {
+  let user = (_isAdmin)? "Lucas Rangel" : _currentUser;
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("panel").classList.remove("hidden");
-  document.getElementById("welcomeText").textContent = `Bienvenido, ${_currentUser}`;
+  document.getElementById("welcomeText").textContent = `Bienvenido, ${user}`;
   document.getElementById("roleBadge").textContent   = _isAdmin ? "Administrador" : "Estudiante";
   document.getElementById("addButton").classList.toggle("hidden", !_isAdmin);
 }
