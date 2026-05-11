@@ -21,7 +21,7 @@
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src  'self' 'unsafe-inline';
+    script-src  'self';
     style-src   'self' 'unsafe-inline';
     connect-src https://script.google.com https://script.googleusercontent.com http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* ws://localhost:*;
     img-src     'self' data:;
@@ -91,7 +91,7 @@
 
       </div>
 
-      <button class="btn" id="loginBtn" onclick="login()">
+      <button class="btn" id="loginBtn">
         Ingresar
       </button>
 
@@ -120,7 +120,7 @@
 
       </div>
 
-      <button class="logout" onclick="logout()">
+      <button class="logout" id="logoutBtn">
         Cerrar sesión
       </button>
 
@@ -135,7 +135,6 @@
     <button
       id="addButton"
       class="add-btn hidden"
-      onclick="openModal()"
       aria-label="Agregar recurso">
       +
     </button>
@@ -149,7 +148,6 @@
     <div class="modal-content">
 
       <h3 id="modalTitle">Agregar recurso</h3>
-      <div id="resourcesContainer"></div>
 
       <div class="input-group">
         <label for="resourceName">Nombre del recurso</label>
@@ -177,11 +175,11 @@
 
       <div class="modal-buttons">
 
-        <button class="btn secondary" onclick="closeModal()">
+        <button class="btn secondary" id="cancelModalBtn">
           Cancelar
         </button>
 
-        <button class="btn" onclick="addResource()">
+        <button class="btn" id="saveModalBtn">
           Guardar
         </button>
 

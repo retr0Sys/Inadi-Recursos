@@ -34,18 +34,22 @@ const Security = (function () {
     }
   })();
 
-  /* ── Rate Limiting ──────────────────────────────────────────────────── */
-  const RATE_KEY    = "__rl_fails";
-  const RATE_TS_KEY = "__rl_ts";
+  /* ── Rate Limiting (localStorage — persiste entre pestañas) ──────────
+     CIS Control 5.4 | OWASP A07:2025 | NIST PR.AA-05
+     Usar localStorage en lugar de sessionStorage evita que un atacante
+     eluda el bloqueo abriendo una nueva pestaña.
+     ──────────────────────────────────────────────────────────────────── */
+  const RATE_KEY    = "__inadi_rl_fails";
+  const RATE_TS_KEY = "__inadi_rl_ts";
   const MAX_FAILS   = 5;
   const BLOCK_MS    = 30_000;
 
   function _getFailCount() {
-    return parseInt(sessionStorage.getItem(RATE_KEY) || "0", 10);
+    return parseInt(localStorage.getItem(RATE_KEY) || "0", 10);
   }
 
   function _getBlockTime() {
-    return parseInt(sessionStorage.getItem(RATE_TS_KEY) || "0", 10);
+    return parseInt(localStorage.getItem(RATE_TS_KEY) || "0", 10);
   }
 
   function isBlocked() {
@@ -53,8 +57,8 @@ const Security = (function () {
     if (fails < MAX_FAILS) return false;
     const elapsed = Date.now() - _getBlockTime();
     if (elapsed >= BLOCK_MS) {
-      sessionStorage.removeItem(RATE_KEY);
-      sessionStorage.removeItem(RATE_TS_KEY);
+      localStorage.removeItem(RATE_KEY);
+      localStorage.removeItem(RATE_TS_KEY);
       return false;
     }
     return true;
@@ -66,23 +70,43 @@ const Security = (function () {
 
   function recordFail() {
     const fails = _getFailCount() + 1;
-    sessionStorage.setItem(RATE_KEY, String(fails));
+    localStorage.setItem(RATE_KEY, String(fails));
     if (fails >= MAX_FAILS) {
-      sessionStorage.setItem(RATE_TS_KEY, String(Date.now()));
+      localStorage.setItem(RATE_TS_KEY, String(Date.now()));
     }
   }
 
   function resetFails() {
-    sessionStorage.removeItem(RATE_KEY);
-    sessionStorage.removeItem(RATE_TS_KEY);
+    localStorage.removeItem(RATE_KEY);
+    localStorage.removeItem(RATE_TS_KEY);
   }
 
-  /* ── SHA-256 + Salt via Web Crypto API ──────────────────────────────── */
-  async function sha256salted(salt, str) {
-    // SHA-256( salt + input ) — salt obtenido de _cfg.getSalt()
+  /* ── PBKDF2-SHA256 via Web Crypto API ───────────────────────────────
+     NIST SP 800-132 | OWASP Password Storage Cheat Sheet 2025
+     PBKDF2(password=nombre, salt=salt_bytes, iterations=200 000, PRF=SHA-256)
+     Cumple con FIPS 140-2 y es resistente a ataques de diccionario/GPU.
+     El login tardará ~150-200 ms — aceptable; dificulta brute-force.
+     ──────────────────────────────────────────────────────────────────── */
+  async function pbkdf2salted(saltStr, str) {
     const enc = new TextEncoder();
-    const buf = await crypto.subtle.digest("SHA-256", enc.encode(salt + str));
-    return Array.from(new Uint8Array(buf))
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(str),
+      "PBKDF2",
+      false,
+      ["deriveBits"]
+    );
+    const bits = await crypto.subtle.deriveBits(
+      {
+        name:       "PBKDF2",
+        salt:       enc.encode(saltStr),
+        iterations: _cfg.getPbkdf2Iters(),
+        hash:       "SHA-256",
+      },
+      keyMaterial,
+      256
+    );
+    return Array.from(new Uint8Array(bits))
       .map(b => b.toString(16).padStart(2, "0"))
       .join("");
   }
@@ -94,11 +118,11 @@ const Security = (function () {
     return d.innerHTML;
   }
 
-  /* ── Validación de URL ───────────────────────────────────────────────── */
+  /* ── Validación de URL (solo HTTPS) ────────────────────────────────── */
   function isSafeUrl(raw) {
     try {
       const u = new URL(raw);
-      return u.protocol === "https:" || u.protocol === "http:";
+      return u.protocol === "https:";
     } catch (_) {
       return false;
     }
@@ -106,11 +130,8 @@ const Security = (function () {
 
   /* ── Limpieza de sesión ─────────────────────────────────────────────── */
   function clearSession() {
-    const rlFails = sessionStorage.getItem(RATE_KEY);
-    const rlTs    = sessionStorage.getItem(RATE_TS_KEY);
+    // Preserva los contadores de rate limiting (en localStorage, no en sessionStorage)
     sessionStorage.clear();
-    if (rlFails) sessionStorage.setItem(RATE_KEY, rlFails);
-    if (rlTs)    sessionStorage.setItem(RATE_TS_KEY, rlTs);
   }
 
   return {
@@ -118,7 +139,7 @@ const Security = (function () {
     remainingBlockMs,
     recordFail,
     resetFails,
-    sha256salted,
+    pbkdf2salted,
     escapeHtml,
     isSafeUrl,
     clearSession,
@@ -130,18 +151,24 @@ const Security = (function () {
 function showSkeletons() {
   const container = document.getElementById("resourcesContainer");
 
-  container.innerHTML = "";
+  // Usar DocumentFragment evita reparsear el DOM en cada iteración (más seguro y eficiente)
+  const frag = document.createDocumentFragment();
 
   for (let i = 0; i < 10; i++) {
-    container.innerHTML += `
-      <div class="skeleton-card">
-        <div class="skeleton-line title"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line short"></div>
-      </div>
-    `;
+    const card = document.createElement("div");
+    card.className = "skeleton-card";
+
+    ["skeleton-line title", "skeleton-line", "skeleton-line", "skeleton-line short"].forEach(cls => {
+      const line = document.createElement("div");
+      line.className = cls;
+      card.appendChild(line);
+    });
+
+    frag.appendChild(card);
   }
+
+  container.innerHTML = "";
+  container.appendChild(frag);
 }
 
 
@@ -183,6 +210,12 @@ let _salt        = "";
   document.getElementById("username")
     .addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 
+  document.getElementById("loginBtn").addEventListener("click", login);
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document.getElementById("addButton").addEventListener("click", openModal);
+  document.getElementById("cancelModalBtn").addEventListener("click", closeModal);
+  document.getElementById("saveModalBtn").addEventListener("click", addResource);
+
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeModal();
   });
@@ -191,7 +224,34 @@ let _salt        = "";
     .addEventListener("click", e => {
       if (e.target === document.getElementById("modal")) closeModal();
     });
+
+  _initIdleTimeout();
 })();
+
+/* ════════════════════════════════════════════════════════════════════════
+   IDLE SESSION TIMEOUT
+   ISO 27001:2022 A.8.5 | NIST PR.AA-02 | CIS Control 5.3
+   Auto-logout tras 15 minutos sin actividad del usuario.
+   ════════════════════════════════════════════════════════════════════════ */
+const IDLE_TIMEOUT_MS = 15 * 60 * 1_000; // 15 minutos
+let   _idleTimer      = null;
+
+function _resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  // Solo activar si hay sesión abierta
+  if (sessionStorage.getItem("__sess_active")) {
+    _idleTimer = setTimeout(() => {
+      console.warn("[INADI] Sesión cerrada por inactividad.");
+      logout();
+    }, IDLE_TIMEOUT_MS);
+  }
+}
+
+function _initIdleTimeout() {
+  ["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(evt => {
+    document.addEventListener(evt, _resetIdleTimer, { passive: true });
+  });
+}
 
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -216,16 +276,22 @@ async function login() {
     return;
   }
 
+  // Validación de longitud en JS (defensa en profundidad — no solo atributo HTML)
+  if (rawInput.length > 80) {
+    _showError(errorEl, "El nombre es demasiado largo.");
+    return;
+  }
+
   btn.disabled    = true;
   btn.textContent = "Verificando…";
 
   try {
-    /* ── Hash + Salt ───────────────────────────────────────────────────
-       Se calcula SHA-256( salt + input ) y se compara contra los hashes
-       almacenados en config.js. El salt nunca viaja en texto plano:
-       se decodifica de Base64 en runtime y vive solo en memoria.
+    /* ── PBKDF2-SHA256 + Salt ──────────────────────────────────────────
+       PBKDF2(password=input, salt=salt_bytes, iter=200 000, PRF=SHA-256)
+       El resultado se compara contra los hashes de config.js.
+       El salt se decodifica de Base64 en runtime y vive solo en memoria.
        ─────────────────────────────────────────────────────────────── */
-    const inputHash = await Security.sha256salted(_salt, rawInput);
+    const inputHash = await Security.pbkdf2salted(_salt, rawInput);
     const hashes    = _cfg.getUserHashes();
     const adminHash = _cfg.getAdminHash();
 
@@ -246,6 +312,7 @@ async function login() {
     sessionStorage.setItem("__sess_role", _isAdmin ? "admin" : "student");
 
     _applySession();
+    _resetIdleTimer();
     loadResources();
 
   } catch (err) {
@@ -407,11 +474,15 @@ function renderResources() {
     container.appendChild(card);
   });
 
+}
+
+// Cierra todos los menús contextuales al hacer click fuera — registrado una sola vez
+(function _initMenuDismiss() {
   document.addEventListener("click", () => {
     document.querySelectorAll(".resource-menu")
       .forEach(menu => menu.classList.add("hidden"));
   });
-}
+})();
 
 async function editResource(index) {
   if (!_isAdmin) return;
@@ -425,6 +496,11 @@ async function editResource(index) {
 
   if (!trimmedName) {
     alert("El nombre no puede estar vacío.");
+    return;
+  }
+
+  if (trimmedName.length > 120) {
+    alert("El nombre es demasiado largo (máx. 120 caracteres).");
     return;
   }
 
@@ -521,7 +597,7 @@ async function addResource() {
     return;
   }
   if (!Security.isSafeUrl(link)) {
-    _showError(modalErr, "El link debe ser una URL válida (https:// o http://).");
+    _showError(modalErr, "El link debe ser una URL válida (https://).");
     return;
   }
 
