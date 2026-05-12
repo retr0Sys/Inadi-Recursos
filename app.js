@@ -192,11 +192,12 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10_000) {
    ESTADO DE LA APLICACIÓN
    ════════════════════════════════════════════════════════════════════════ */
 
-let _currentUser = "";
-let _isAdmin     = false;
-let _resources   = [];
-let _endpoint    = "";
-let _salt        = "";
+let _currentUser   = "";
+let _isAdmin       = false;
+let _resources     = [];
+let _endpoint      = "";
+let _salt          = "";
+let _searchQuery   = "";
 
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -224,6 +225,24 @@ let _salt        = "";
     .addEventListener("click", e => {
       if (e.target === document.getElementById("modal")) closeModal();
     });
+
+  /* ── Búsqueda de recursos ──────────────────────────────── */
+  const searchInput   = document.getElementById("searchInput");
+  const searchClearBtn = document.getElementById("searchClearBtn");
+
+  searchInput.addEventListener("input", () => {
+    _searchQuery = searchInput.value.trim();
+    searchClearBtn.classList.toggle("hidden", _searchQuery === "");
+    renderResources();
+  });
+
+  searchClearBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    _searchQuery = "";
+    searchClearBtn.classList.add("hidden");
+    searchInput.focus();
+    renderResources();
+  });
 
   _initIdleTimeout();
 })();
@@ -337,6 +356,7 @@ function logout() {
   _currentUser = "";
   _isAdmin     = false;
   _resources   = [];
+  _searchQuery = "";
 
   Security.clearSession();
 
@@ -349,6 +369,12 @@ function logout() {
   document.getElementById("loginError").style.display    = "none";
   document.getElementById("welcomeText").textContent      = "";
   document.getElementById("roleBadge").textContent        = "";
+
+  /* Resetear búsqueda */
+  const si = document.getElementById("searchInput");
+  if (si) si.value = "";
+  const sc = document.getElementById("searchClearBtn");
+  if (sc) sc.classList.add("hidden");
 }
 
 
@@ -399,11 +425,24 @@ function renderResources() {
     return;
   }
 
+  /* ── Filtrado por búsqueda ─────────────────────────────── */
+  const query   = _searchQuery.toLowerCase();
+  const visible = query
+    ? _resources.filter(r => String(r.nombre ?? "").toLowerCase().includes(query))
+    : _resources;
+
+  if (!visible.length) {
+    empty.textContent   = `No se encontraron recursos para "${_searchQuery}".`;
+    empty.style.display = "block";
+    return;
+  }
+
   empty.style.display = "none";
 
-  _resources.forEach((resource, index) => {
+  visible.forEach((resource) => {
     if (typeof resource !== "object" || resource === null) return;
 
+    const realIndex = _resources.indexOf(resource);
     const rawNombre = String(resource.nombre ?? "Sin nombre");
     const rawLink   = String(resource.link ?? "");
 
@@ -431,11 +470,11 @@ function renderResources() {
 
       const editBtn = document.createElement("button");
       editBtn.textContent = "✏️ Editar";
-      editBtn.onclick = () => editResource(index);
+      editBtn.onclick = () => editResource(realIndex);
 
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "🗑️ Eliminar";
-      deleteBtn.onclick = () => deleteResource(index);
+      deleteBtn.onclick = () => deleteResource(realIndex);
 
       menu.appendChild(editBtn);
       menu.appendChild(deleteBtn);
