@@ -56,18 +56,18 @@ const _cfg = Object.freeze((function () {
     "e5eeb24d465113fe1a98a1b3fa7a71995726265dcb139be9116dddff4dd4d3cf",
     "977ffd3a008059da69d98f7a8f14001b97e264fdea4590f1d33db36d9c8ea989",
     "b721356966482e6aff8b710d705e242e0c8bf40ecdf6341cbc9e8c864fcc8f37",
-    "a40e95c213839f972d0b6a6b630e15e8c327608ad7588533f27641f634874564", // admin
+    "898d128f783fe3b2fb901daec23f9890649449976f2b45f055ba654b9cb40b6c", // admin
   ];
 
   // Hash del administrador (último de la lista)
-  const _adminHash = "a40e95c213839f972d0b6a6b630e15e8c327608ad7588533f27641f634874564";
+  const _adminHash = "898d128f783fe3b2fb901daec23f9890649449976f2b45f055ba654b9cb40b6c";
 
   return {
-    getEndpoint:       _buildEndpoint,
-    getSalt:           _getSalt,
-    getUserHashes:     () => [..._h],
-    getAdminHash:      () => _adminHash,
-    getPbkdf2Iters:    () => PBKDF2_ITERATIONS,
+    getEndpoint: _buildEndpoint,
+    getSalt: _getSalt,
+    getUserHashes: () => [..._h],
+    getAdminHash: () => _adminHash,
+    getPbkdf2Iters: () => PBKDF2_ITERATIONS,
   };
 
 })());
