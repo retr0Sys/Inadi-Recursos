@@ -278,15 +278,43 @@ function _initIdleTimeout() {
    AUTENTICACIÓN
    ════════════════════════════════════════════════════════════════════════ */
 
+function disableLoginButtonCountdown(btn, errorEl) {
+
+  btn.disabled = true;
+
+  const updateButton = () => {
+
+    const secs = Math.ceil(Security.remainingBlockMs() / 1000);
+
+    _showError(
+      errorEl,
+      `Demasiados intentos. Esperá ${secs}s.`
+    );
+
+    if (secs <= 0) {
+
+      clearInterval(interval);
+
+      btn.disabled = false;
+      btn.textContent = "Ingresar";
+
+      errorEl.style.display = "none";
+    }
+  };
+
+  updateButton();
+
+  const interval = setInterval(updateButton, 1000);
+}
+
 async function login() {
   const btn     = document.getElementById("loginBtn");
   const errorEl = document.getElementById("loginError");
 
   /* ── Rate limiting ─────────────────────────────────────────────────── */
   if (Security.isBlocked()) {
-    const secs = Math.ceil(Security.remainingBlockMs() / 1000);
-    _showError(errorEl, `Demasiados intentos. Esperá ${secs}s.`);
-    return;
+  disableLoginButtonCountdown(btn, errorEl);
+  return;
   }
 
   const rawInput = document.getElementById("username").value.trim();
