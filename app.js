@@ -157,6 +157,7 @@ function showSkeletons() {
   for (let i = 0; i < 10; i++) {
     const card = document.createElement("div");
     card.className = "skeleton-card";
+    card.style.setProperty("--i", i); // stagger animation
 
     ["skeleton-line title", "skeleton-line", "skeleton-line", "skeleton-line short"].forEach(cls => {
       const line = document.createElement("div");
@@ -345,11 +346,28 @@ async function login() {
 
 function _applySession() {
   let user = (_isAdmin)? "Lucas Rangel" : _currentUser;
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("panel").classList.remove("hidden");
-  document.getElementById("welcomeText").textContent = `Bienvenido, ${user}`;
-  document.getElementById("roleBadge").textContent   = _isAdmin ? "Administrador" : "Estudiante";
-  document.getElementById("addButton").classList.toggle("hidden", !_isAdmin);
+
+  // Fade out login
+  const loginEl = document.getElementById("loginScreen");
+  loginEl.classList.add("fade-out");
+
+  setTimeout(() => {
+    loginEl.classList.add("hidden");
+    loginEl.classList.remove("fade-out");
+
+    const panelEl = document.getElementById("panel");
+    panelEl.classList.remove("hidden");
+    panelEl.classList.add("fade-in");
+    setTimeout(() => panelEl.classList.remove("fade-in"), 450);
+
+    document.getElementById("welcomeText").textContent = `Bienvenido, ${user}`;
+
+    const badge = document.getElementById("roleBadge");
+    badge.textContent = _isAdmin ? "Administrador" : "Estudiante";
+    badge.classList.toggle("admin", _isAdmin);
+
+    document.getElementById("addButton").classList.toggle("hidden", !_isAdmin);
+  }, 260);
 }
 
 function logout() {
@@ -510,6 +528,7 @@ function renderResources() {
       card.appendChild(warn);
     }
 
+    card.style.setProperty("--i", container.children.length); // stagger
     container.appendChild(card);
   });
 
