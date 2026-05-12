@@ -342,6 +342,9 @@ async function login() {
     btn.disabled    = false;
     btn.textContent = "Ingresar";
   }
+
+  /* Ocultar footer durante la sesión (solo en UI, no en config.js) — estética y para evitar distracciones. */
+  document.getElementById("footer").style.display = "none";
 }
 
 function _applySession() {
@@ -393,6 +396,9 @@ function logout() {
   if (si) si.value = "";
   const sc = document.getElementById("searchClearBtn");
   if (sc) sc.classList.add("hidden");
+
+  /* Mostrar footer (oculto durante la sesión) */
+  document.getElementById("footer").style.display = "block";
 }
 
 
