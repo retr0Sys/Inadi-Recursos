@@ -313,8 +313,8 @@ async function login() {
 
   /* ── Rate limiting ─────────────────────────────────────────────────── */
   if (Security.isBlocked()) {
-  disableLoginButtonCountdown(btn, errorEl);
-  return;
+    disableLoginButtonCountdown(btn, errorEl);
+    return;
   }
 
   const rawInput = document.getElementById("username").value.trim();
