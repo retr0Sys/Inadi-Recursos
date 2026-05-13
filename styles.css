@@ -95,7 +95,7 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 20px 20px 80px; /* espacio inferior para el footer fijo */
 }
 
 /* Transición de pantalla */
@@ -303,7 +303,7 @@ h1 {
   position: relative;
   z-index: 1;
   min-height: 100vh;
-  padding: 0 40px 60px;
+  padding: 0 40px 90px; /* espacio inferior para el footer fijo */
 }
 
 /* Topbar sticky con glassmorphism */
@@ -795,12 +795,26 @@ h1 {
 
 /* ── FOOTER DE CRÉDITOS ──────────────────────────────────── */
 footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   text-align: center;
-  padding: 4px 20px;
-  opacity: 0.45;
-  font-size: 0.82rem;
+  padding: 18px 20px 12px;
+  opacity: 0.38;
+  font-size: 0.72rem;
+  line-height: 1.65;
+  background: linear-gradient(to top, rgba(9,17,31,0.80) 60%, transparent 100%);
+  pointer-events: none;
+}
 
-  margin-top: -40px;
+footer a {
+  pointer-events: auto;
+}
+
+footer p {
+  margin: 0;
 }
 
 a {
