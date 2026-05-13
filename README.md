@@ -92,4 +92,4 @@ Ver [`LICENSE`](./LICENSE) para más información.
 
 ## 📄 Licencia
 
-MIT © 2026 Lucas Rangel
+MIT © 2026 Lucas David Rangel Silveira
