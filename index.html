@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -40,19 +41,18 @@
   <meta name="referrer" content="no-referrer">
 
   <!-- Deshabilitar APIs de hardware innecesarias -->
-  <meta http-equiv="Permissions-Policy"
-        content="geolocation=(), microphone=(), camera=(), payment=(), usb=()">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), usb=()">
 
   <!-- Cache: no almacenar en caché (protege sesiones en equipos compartidos) -->
   <meta http-equiv="Cache-Control" content="no-cache">
-  <meta http-equiv="Pragma"        content="no-cache">
-  <meta http-equiv="Expires"       content="0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
   <!-- ═══════════════════════════════════════════════════════════════════
        SEO / META
        ═══════════════════════════════════════════════════════════════════ -->
   <meta name="description" content="Portal de recursos educativos INADI - GameMaker">
-  <meta name="robots"      content="noindex, nofollow">
+  <meta name="robots" content="noindex, nofollow">
 
   <!-- ═══════════════════════════════════════════════════════════════════
        ESTILOS
@@ -63,6 +63,7 @@
   <link rel="stylesheet" href="styles.css">
 
 </head>
+
 <body>
 
   <!-- LOGIN -->
@@ -83,15 +84,8 @@
 
         <label for="username">Nombre y apellido</label>
 
-        <input
-          type="text"
-          id="username"
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-          placeholder="Ej: Lucas Rangel"
-          maxlength="80"
-        >
+        <input type="text" id="username" autocomplete="off" autocorrect="off" spellcheck="false"
+          placeholder="Ej: Lucas Rangel" maxlength="80">
 
         <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
 
@@ -136,20 +130,12 @@
       <span class="search-icon" aria-hidden="true">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
       </span>
-      <input
-        type="search"
-        id="searchInput"
-        class="search-input"
-        placeholder="Buscar recurso…"
-        maxlength="120"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        aria-label="Buscar recursos"
-      >
+      <input type="search" id="searchInput" class="search-input" placeholder="Buscar recurso…" maxlength="120"
+        autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Buscar recursos">
       <button class="search-clear hidden" id="searchClearBtn" aria-label="Limpiar búsqueda">✕</button>
     </div>
 
@@ -159,10 +145,7 @@
       No hay recursos agregados todavía.
     </div>
 
-    <button
-      id="addButton"
-      class="add-btn hidden"
-      aria-label="Agregar recurso">
+    <button id="addButton" class="add-btn hidden" aria-label="Agregar recurso">
       +
     </button>
 
@@ -178,24 +161,12 @@
 
       <div class="input-group">
         <label for="resourceName">Nombre del recurso</label>
-        <input
-          type="text"
-          id="resourceName"
-          placeholder="Ej: Tutorial GameMaker"
-          maxlength="120"
-          autocomplete="off"
-        >
+        <input type="text" id="resourceName" placeholder="Ej: Tutorial GameMaker" maxlength="120" autocomplete="off">
       </div>
 
       <div class="input-group">
         <label for="resourceLink">Link</label>
-        <input
-          type="url"
-          id="resourceLink"
-          placeholder="https://..."
-          maxlength="2048"
-          autocomplete="off"
-        >
+        <input type="url" id="resourceLink" placeholder="https://..." maxlength="2048" autocomplete="off">
       </div>
 
       <div id="modalError" class="modal-error" role="alert" aria-live="polite"></div>
@@ -222,23 +193,12 @@
       <h3 id="editModalTitle">Editar recurso</h3>
       <div class="input-group">
         <label for="editResourceName">Nombre del recurso</label>
-        <input
-          type="text"
-          id="editResourceName"
-          placeholder="Ej: Tutorial GameMaker"
-          maxlength="120"
-          autocomplete="off"
-        >
+        <input type="text" id="editResourceName" placeholder="Ej: Tutorial GameMaker" maxlength="120"
+          autocomplete="off">
       </div>
       <div class="input-group">
         <label for="editResourceLink">Link</label>
-        <input
-          type="url"
-          id="editResourceLink"
-          placeholder="https://..."
-          maxlength="2048"
-          autocomplete="off"
-        >
+        <input type="url" id="editResourceLink" placeholder="https://..." maxlength="2048" autocomplete="off">
       </div>
       <div id="editModalError" class="modal-error" role="alert" aria-live="polite"></div>
       <div class="modal-buttons">
@@ -252,7 +212,8 @@
   <div id="deleteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
     <div class="modal-content modal-content--narrow">
       <h3 id="deleteModalTitle">Eliminar recurso</h3>
-      <p class="delete-confirm-text">¿Seguro que querés eliminar <strong id="deleteResourceName"></strong>? Esta acción no se puede deshacer.</p>
+      <p class="delete-confirm-text">¿Seguro que querés eliminar <strong id="deleteResourceName"></strong>? Esta acción
+        no se puede deshacer.</p>
       <div id="deleteModalError" class="modal-error" role="alert" aria-live="polite"></div>
       <div class="modal-buttons">
         <button class="btn secondary" id="cancelDeleteModalBtn">Cancelar</button>
@@ -272,9 +233,11 @@
        Footer, créditos, etc. (opcional)
        ═══════════════════════════════════════════════════════════════════ -->
   <footer id="footer">
-    <p>© 2026 Lucas Rangel · Licencia MIT · Colaboración técnica: Thiago Rafael Sosa Olivera</p>
-    <p>Código fuente en GitHub: <a href="https://github.com/MrLuksR/Inadi-Recursos" target="_blank" rel="noopener noreferrer">MrLuksR/Inadi-Recursos</a></p>
+    <p>© 2026 Lucas Rangel · Licencia MIT · Colaboración técnica: Thiago Sosa</p>
+    <p>Código fuente en GitHub: <a href="https://github.com/MrLuksR/Inadi-Recursos" target="_blank"
+        rel="noopener noreferrer">MrLuksR/Inadi-Recursos</a></p>
   </footer>
 
 </body>
+
 </html>
