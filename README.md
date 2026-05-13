@@ -82,8 +82,8 @@ Para más detalles, ver los comentarios en `index.html` y `app.js`.
 
 | Rol | Persona |
 |---|---|
-| Desarrollo frontend & diseño | **Lucas Rangel** |
-| Backend (Apps Script) & soporte técnico | **Thiago Rafael Sosa Olivera** |
+| Desarrollo frontend & backend | **Lucas Rangel** |
+| Soporte técnico & seguridad| **Thiago Rafael Sosa Olivera** |
 
 Este proyecto utiliza componentes y recursos bajo **licencia MIT**.
 Ver [`LICENSE`](./LICENSE) para más información.
@@ -92,4 +92,4 @@ Ver [`LICENSE`](./LICENSE) para más información.
 
 ## 📄 Licencia
 
-MIT © 2026 Lucas Rangel
+MIT © 2026 Lucas David Rangel Silveira
