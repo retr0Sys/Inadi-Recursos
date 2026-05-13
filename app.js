@@ -193,12 +193,15 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10_000) {
    ESTADO DE LA APLICACIÓN
    ════════════════════════════════════════════════════════════════════════ */
 
-let _currentUser   = "";
-let _isAdmin       = false;
-let _resources     = [];
-let _endpoint      = "";
-let _salt          = "";
-let _searchQuery   = "";
+let _currentUser        = "";
+let _isAdmin            = false;
+let _resources          = [];
+let _endpoint           = "";
+let _salt               = "";
+let _searchQuery        = "";
+let _editingIndex       = null; // índice del recurso en edición
+let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
+
 
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -209,26 +212,56 @@ let _searchQuery   = "";
   _endpoint = _cfg.getEndpoint();
   _salt     = _cfg.getSalt();
 
+  /* ── Listeners: Login ───────────────────────────────────────────────── */
   document.getElementById("username")
     .addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 
   document.getElementById("loginBtn").addEventListener("click", login);
   document.getElementById("logoutBtn").addEventListener("click", logout);
+
+  /* ── Listeners: Modal agregar ───────────────────────────────────────── */
   document.getElementById("addButton").addEventListener("click", openModal);
   document.getElementById("cancelModalBtn").addEventListener("click", closeModal);
   document.getElementById("saveModalBtn").addEventListener("click", addResource);
-
-  document.addEventListener("keydown", e => {
-    if (e.key === "Escape") closeModal();
-  });
 
   document.getElementById("modal")
     .addEventListener("click", e => {
       if (e.target === document.getElementById("modal")) closeModal();
     });
 
-  /* ── Búsqueda de recursos ──────────────────────────────── */
-  const searchInput   = document.getElementById("searchInput");
+  /* ── Listeners: Modal editar ────────────────────────────────────────── */
+  document.getElementById("cancelEditModalBtn").addEventListener("click", closeEditModal);
+  document.getElementById("saveEditModalBtn").addEventListener("click", saveEditResource);
+
+  ["editResourceName", "editResourceLink"].forEach(id => {
+    document.getElementById(id)
+      .addEventListener("keydown", e => { if (e.key === "Enter") saveEditResource(); });
+  });
+
+  document.getElementById("editModal")
+    .addEventListener("click", e => {
+      if (e.target === document.getElementById("editModal")) closeEditModal();
+    });
+
+  /* ── Listeners: Modal confirmar borrado ─────────────────────────────── */
+  document.getElementById("cancelDeleteModalBtn").addEventListener("click", closeDeleteModal);
+  document.getElementById("confirmDeleteBtn").addEventListener("click", confirmDeleteResource);
+
+  document.getElementById("deleteModal")
+    .addEventListener("click", e => {
+      if (e.target === document.getElementById("deleteModal")) closeDeleteModal();
+    });
+
+  /* ── Escape cierra cualquier modal abierto ───────────────────────────── */
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    closeModal();
+    closeEditModal();
+    closeDeleteModal();
+  });
+
+  /* ── Búsqueda de recursos ────────────────────────────────────────────── */
+  const searchInput    = document.getElementById("searchInput");
   const searchClearBtn = document.getElementById("searchClearBtn");
 
   searchInput.addEventListener("input", () => {
@@ -246,7 +279,22 @@ let _searchQuery   = "";
   });
 
   _initIdleTimeout();
+
+  /* ── Restaurar sesión tras recarga de página ─────────────────────────
+     Si sessionStorage contiene una sesión válida, la reanuda sin pedir
+     el nombre de nuevo. La sesión persiste solo en la pestaña actual.
+     ─────────────────────────────────────────────────────────────────── */
+  const sessUser = sessionStorage.getItem("__sess_user");
+  const sessRole = sessionStorage.getItem("__sess_role");
+  if (sessionStorage.getItem("__sess_active") && sessUser) {
+    _currentUser = sessUser;
+    _isAdmin     = sessRole === "admin";
+    _applySession();
+    _resetIdleTimer();
+    loadResources();
+  }
 })();
+
 
 /* ════════════════════════════════════════════════════════════════════════
    IDLE SESSION TIMEOUT
@@ -358,6 +406,7 @@ async function login() {
 
     sessionStorage.setItem("__sess_active", "1");
     sessionStorage.setItem("__sess_role", _isAdmin ? "admin" : "student");
+    sessionStorage.setItem("__sess_user", rawInput);
 
     _applySession();
     _resetIdleTimer();
@@ -402,22 +451,38 @@ function _applySession() {
 }
 
 function logout() {
-  _currentUser = "";
-  _isAdmin     = false;
-  _resources   = [];
-  _searchQuery = "";
+  _currentUser        = "";
+  _isAdmin            = false;
+  _resources          = [];
+  _searchQuery        = "";
+  _editingIndex       = null;
+  _pendingDeleteIndex = null;
 
   Security.clearSession();
 
-  document.getElementById("panel").classList.add("hidden");
-  document.getElementById("loginScreen").classList.remove("hidden");
-  document.getElementById("username").value             = "";
+  /* Cerrar cualquier modal que estuviese abierto */
+  closeModal();
+  closeEditModal();
+  closeDeleteModal();
+
+  /* Restaurar UI de login */
+  const panel     = document.getElementById("panel");
+  const login     = document.getElementById("loginScreen");
+  const container = document.getElementById("resourcesContainer");
+  const emptyMsg  = document.getElementById("emptyMessage");
+
+  panel.classList.add("hidden");
+  login.classList.remove("hidden");
+
+  document.getElementById("username").value          = "";
   document.getElementById("addButton").classList.add("hidden");
-  document.getElementById("resourcesContainer").innerHTML = "";
-  document.getElementById("emptyMessage").style.display  = "block";
-  document.getElementById("loginError").style.display    = "none";
-  document.getElementById("welcomeText").textContent      = "";
-  document.getElementById("roleBadge").textContent        = "";
+  document.getElementById("loginError").style.display = "none";
+  document.getElementById("welcomeText").textContent  = "";
+  document.getElementById("roleBadge").textContent    = "";
+
+  container.innerHTML       = "";
+  emptyMsg.textContent      = "No hay recursos agregados todavía.";
+  emptyMsg.style.display    = "block";
 
   /* Resetear búsqueda */
   const si = document.getElementById("searchInput");
@@ -425,7 +490,7 @@ function logout() {
   const sc = document.getElementById("searchClearBtn");
   if (sc) sc.classList.add("hidden");
 
-  /* Mostrar footer (oculto durante la sesión) */
+  /* Mostrar footer */
   document.getElementById("footer").style.display = "block";
 }
 
@@ -436,9 +501,10 @@ function logout() {
 
 async function loadResources() {
   const emptyEl = document.getElementById("emptyMessage");
-  emptyEl.textContent   = "Cargando recursos…";
-  emptyEl.style.display = "block";
 
+  /* Ocultar el mensaje de estado antes de mostrar skeletons para evitar
+     que ambos coexistan un frame. El skeleton ya cubre el contenedor. */
+  emptyEl.style.display = "none";
   showSkeletons();
 
   try {
@@ -477,10 +543,15 @@ function renderResources() {
     return;
   }
 
-  /* ── Filtrado por búsqueda ─────────────────────────────── */
+  /* ── Filtrado por búsqueda: nombre Y dominio del link ─────── */
   const query   = _searchQuery.toLowerCase();
   const visible = query
-    ? _resources.filter(r => String(r.nombre ?? "").toLowerCase().includes(query))
+    ? _resources.filter(r => {
+        const nombre = String(r.nombre ?? "").toLowerCase();
+        let   domain = "";
+        try { domain = new URL(String(r.link ?? "")).hostname.toLowerCase(); } catch (_) {}
+        return nombre.includes(query) || domain.includes(query);
+      })
     : _resources;
 
   if (!visible.length) {
@@ -500,6 +571,7 @@ function renderResources() {
 
     const card = document.createElement("div");
     card.className = "resource-card";
+    card.dataset.resourceIndex = realIndex; // para animar salida al borrar
 
     const header = document.createElement("div");
     header.className = "resource-header";
@@ -522,11 +594,11 @@ function renderResources() {
 
       const editBtn = document.createElement("button");
       editBtn.textContent = "✏️ Editar";
-      editBtn.onclick = () => editResource(realIndex);
+      editBtn.onclick = () => openEditModal(realIndex);
 
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "🗑️ Eliminar";
-      deleteBtn.onclick = () => deleteResource(realIndex);
+      deleteBtn.onclick = () => openDeleteModal(realIndex);
 
       menu.appendChild(editBtn);
       menu.appendChild(deleteBtn);
@@ -576,79 +648,151 @@ function renderResources() {
   });
 })();
 
-async function editResource(index) {
+/* ════════════════════════════════════════════════════════════════════
+   MODAL — EDITAR RECURSO (solo admin)
+   ════════════════════════════════════════════════════════════════════ */
+
+function openEditModal(index) {
   if (!_isAdmin) return;
-
+  _editingIndex = index;
   const resource = _resources[index];
-  const newName = prompt("Nuevo nombre del recurso:", resource.nombre);
+  document.getElementById("editResourceName").value = resource.nombre ?? "";
+  document.getElementById("editResourceLink").value = resource.link   ?? "";
+  document.getElementById("editModalError").style.display = "none";
+  document.getElementById("editModal").classList.remove("hidden");
+  document.getElementById("editResourceName").focus();
+}
 
-  if (newName === null) return;
+function closeEditModal() {
+  document.getElementById("editModal").classList.add("hidden");
+  document.getElementById("editResourceName").value = "";
+  document.getElementById("editResourceLink").value = "";
+  document.getElementById("editModalError").style.display = "none";
+  _editingIndex = null;
+}
 
-  const trimmedName = newName.trim();
+async function saveEditResource() {
+  if (!_isAdmin || _editingIndex === null) return;
 
-  if (!trimmedName) {
-    alert("El nombre no puede estar vacío.");
+  const editErr = document.getElementById("editModalError");
+  const name    = document.getElementById("editResourceName").value.trim();
+  const link    = document.getElementById("editResourceLink").value.trim();
+
+  /* ── Validaciones ──────────────────────────────────────────── */
+  if (!name) {
+    _showError(editErr, "El nombre no puede estar vacío.");
+    return;
+  }
+  if (name.length > 120) {
+    _showError(editErr, "El nombre es demasiado largo (máx. 120 caracteres).");
+    return;
+  }
+  if (!link) {
+    _showError(editErr, "El link no puede estar vacío.");
+    return;
+  }
+  if (!Security.isSafeUrl(link)) {
+    _showError(editErr, "El link debe ser una URL válida (https://).");
     return;
   }
 
-  if (trimmedName.length > 120) {
-    alert("El nombre es demasiado largo (máx. 120 caracteres).");
-    return;
-  }
+  editErr.style.display = "none";
+
+  const saveBtn = document.getElementById("saveEditModalBtn");
+  saveBtn.disabled    = true;
+  saveBtn.textContent = "Guardando…";
 
   try {
     const resp = await fetchWithTimeout(
       _endpoint,
       {
-        method: "POST",
+        method:      "POST",
         credentials: "omit",
-        body: JSON.stringify({
-          action: "edit",
-          index,
-          nombre: trimmedName,
-          link: resource.link
-        }),
+        body: JSON.stringify({ action: "edit", index: _editingIndex, nombre: name, link }),
       },
-      10000
+      10_000
     );
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
+    closeEditModal();
     await loadResources();
 
   } catch (err) {
-    console.warn("[INADI] editResource:", err.message);
-    alert("No se pudo editar el recurso.");
+    if (err.name === "AbortError") {
+      _showError(editErr, "El servidor tardó demasiado. Intentá de nuevo.");
+    } else {
+      _showError(editErr, "No se pudo editar el recurso. Intentá de nuevo.");
+    }
+    console.warn("[INADI] saveEditResource:", err.message);
+  } finally {
+    saveBtn.disabled    = false;
+    saveBtn.textContent = "Guardar cambios";
   }
 }
 
-async function deleteResource(index) {
-  if (!_isAdmin) return;
+/* ════════════════════════════════════════════════════════════════════
+   MODAL — CONFIRMAR ELIMINACIÓN (solo admin)
+   ════════════════════════════════════════════════════════════════════ */
 
-  const confirmDelete = confirm("¿Eliminar este recurso?");
-  if (!confirmDelete) return;
+function openDeleteModal(index) {
+  if (!_isAdmin) return;
+  _pendingDeleteIndex = index;
+  const resource = _resources[index];
+  /* textContent — nunca innerHTML, previene XSS */
+  document.getElementById("deleteResourceName").textContent = resource.nombre ?? "este recurso";
+  document.getElementById("deleteModalError").style.display = "none";
+  document.getElementById("deleteModal").classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+  document.getElementById("deleteModal").classList.add("hidden");
+  document.getElementById("deleteModalError").style.display = "none";
+  _pendingDeleteIndex = null;
+}
+
+async function confirmDeleteResource() {
+  if (!_isAdmin || _pendingDeleteIndex === null) return;
+
+  const index      = _pendingDeleteIndex;
+  const deleteErr  = document.getElementById("deleteModalError");
+  const confirmBtn = document.getElementById("confirmDeleteBtn");
+
+  confirmBtn.disabled    = true;
+  confirmBtn.textContent = "Eliminando…";
+
+  /* Animar salida de la tarjeta mientras el fetch viaja al servidor */
+  const card = document.querySelector(`[data-resource-index="${index}"]`);
+  if (card) card.classList.add("card-removing");
 
   try {
-    const resp = await fetchWithTimeout(
-      _endpoint,
-      {
-        method: "POST",
-        credentials: "omit",
-        body: JSON.stringify({
-          action: "delete",
-          index
-        }),
-      },
-      10000
-    );
+    /* Esperar tanto el fetch como la duración de la animación (350 ms) */
+    const [resp] = await Promise.all([
+      fetchWithTimeout(
+        _endpoint,
+        {
+          method:      "POST",
+          credentials: "omit",
+          body: JSON.stringify({ action: "delete", index }),
+        },
+        10_000
+      ),
+      new Promise(resolve => setTimeout(resolve, 350)),
+    ]);
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
+    closeDeleteModal();
     await loadResources();
 
   } catch (err) {
-    console.warn("[INADI] deleteResource:", err.message);
-    alert("No se pudo eliminar el recurso.");
+    /* Revertir animación si el servidor falló */
+    if (card) card.classList.remove("card-removing");
+    _showError(deleteErr, "No se pudo eliminar el recurso. Intentá de nuevo.");
+    console.warn("[INADI] confirmDeleteResource:", err.message);
+  } finally {
+    confirmBtn.disabled    = false;
+    confirmBtn.textContent = "Eliminar";
   }
 }
 
