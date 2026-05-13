@@ -44,7 +44,7 @@
         content="geolocation=(), microphone=(), camera=(), payment=(), usb=()">
 
   <!-- Cache: no almacenar en caché (protege sesiones en equipos compartidos) -->
-  <meta http-equiv="Cache-Control" content="no-store">
+  <meta http-equiv="Cache-Control" content="no-cache">
   <meta http-equiv="Pragma"        content="no-cache">
   <meta http-equiv="Expires"       content="0">
 
@@ -214,6 +214,51 @@
 
     </div>
 
+  </div>
+
+  <!-- MODAL EDITAR RECURSO -->
+  <div id="editModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal-content">
+      <h3 id="editModalTitle">Editar recurso</h3>
+      <div class="input-group">
+        <label for="editResourceName">Nombre del recurso</label>
+        <input
+          type="text"
+          id="editResourceName"
+          placeholder="Ej: Tutorial GameMaker"
+          maxlength="120"
+          autocomplete="off"
+        >
+      </div>
+      <div class="input-group">
+        <label for="editResourceLink">Link</label>
+        <input
+          type="url"
+          id="editResourceLink"
+          placeholder="https://..."
+          maxlength="2048"
+          autocomplete="off"
+        >
+      </div>
+      <div id="editModalError" class="modal-error" role="alert" aria-live="polite"></div>
+      <div class="modal-buttons">
+        <button class="btn secondary" id="cancelEditModalBtn">Cancelar</button>
+        <button class="btn" id="saveEditModalBtn">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR ELIMINACIÓN -->
+  <div id="deleteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="modal-content modal-content--narrow">
+      <h3 id="deleteModalTitle">Eliminar recurso</h3>
+      <p class="delete-confirm-text">¿Seguro que querés eliminar <strong id="deleteResourceName"></strong>? Esta acción no se puede deshacer.</p>
+      <div id="deleteModalError" class="modal-error" role="alert" aria-live="polite"></div>
+      <div class="modal-buttons">
+        <button class="btn secondary" id="cancelDeleteModalBtn">Cancelar</button>
+        <button class="btn btn--danger" id="confirmDeleteBtn">Eliminar</button>
+      </div>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════

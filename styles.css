@@ -825,6 +825,49 @@ a {
 a:hover {
   color: #c4b5fd;
 }
+/* ── BOTÓN PELIGRO (eliminar) ────────────────────────────── */
+
+.btn--danger {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  background-size: 200% auto;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background-position: right center;
+  box-shadow: 0 14px 30px rgba(239,68,68,0.45);
+}
+
+/* ── MODAL CONFIRMAR ELIMINACIÓN ─────────────────────────── */
+
+.modal-content--narrow {
+  max-width: 390px;
+}
+
+.delete-confirm-text {
+  text-align: center;
+  opacity: 0.85;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin-bottom: 6px;
+}
+
+.delete-confirm-text strong {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+/* ── ANIMACIÓN SALIDA DE TARJETA ─────────────────────────── */
+
+.card-removing {
+  animation: cardRemove 0.35s ease forwards !important;
+  pointer-events: none;
+}
+
+@keyframes cardRemove {
+  from { opacity: 1; transform: translateY(0)    scale(1);    }
+  to   { opacity: 0; transform: translateY(-14px) scale(0.94); }
+}
+
 /* ── ACCESIBILIDAD: sin animaciones ─────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

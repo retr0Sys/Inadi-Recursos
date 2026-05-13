@@ -59,8 +59,9 @@ const _cfg = Object.freeze((function () {
     "898d128f783fe3b2fb901daec23f9890649449976f2b45f055ba654b9cb40b6c", // admin
   ];
 
-  // Hash del administrador (último de la lista)
-  const _adminHash = "898d128f783fe3b2fb901daec23f9890649449976f2b45f055ba654b9cb40b6c";
+  // Hash del administrador: siempre el último elemento del array _h.
+  // IMPORTANTE: al agregar nuevos usuarios, hacerlo ANTES del hash admin.
+  const _adminHash = _h[_h.length - 1];
 
   return {
     getEndpoint: _buildEndpoint,
