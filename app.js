@@ -289,10 +289,12 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
   if (sessionStorage.getItem("__sess_active") && sessUser) {
     _currentUser = sessUser;
     _isAdmin     = sessRole === "admin";
-    _applySession();
-    _resetIdleTimer();
+    _applySession(() => {
     loadResources();
-  }
+    });
+
+    _resetIdleTimer();
+    }
 })();
 
 
@@ -408,14 +410,22 @@ async function login() {
     sessionStorage.setItem("__sess_role", _isAdmin ? "admin" : "student");
     sessionStorage.setItem("__sess_user", rawInput);
 
-    _applySession();
-    _resetIdleTimer();
+    _applySession(() => {
     loadResources();
+    });
+
+    _resetIdleTimer();
 
   } catch (err) {
-    _showError(errorEl, "Error interno. Intentá de nuevo.");
-    console.warn("[INADI] login:", err.message);
-  } finally {
+
+      // Evitar mostrar error si la sesión ya fue creada
+      if (!sessionStorage.getItem("__sess_active")) {
+        _showError(errorEl, "Error interno. Intentá de nuevo.");
+      }
+
+      console.warn("[INADI] login:", err.message);
+  } 
+  finally {
     btn.disabled    = false;
     btn.textContent = "Ingresar";
   }
@@ -424,7 +434,7 @@ async function login() {
   document.getElementById("footer").style.display = "none";
 }
 
-function _applySession() {
+function _applySession(callback) {
   let user = (_isAdmin)? "Lucas Rangel" : _currentUser;
 
   // Fade out login
@@ -447,6 +457,8 @@ function _applySession() {
     badge.classList.toggle("admin", _isAdmin);
 
     document.getElementById("addButton").classList.toggle("hidden", !_isAdmin);
+    document.getElementById("footer").style.display = "none";
+    if (callback) callback();
   }, 260);
 }
 
@@ -477,6 +489,7 @@ function logout() {
   document.getElementById("username").value          = "";
   document.getElementById("addButton").classList.add("hidden");
   document.getElementById("loginError").style.display = "none";
+  document.getElementById("loginError").textContent = "";
   document.getElementById("welcomeText").textContent  = "";
   document.getElementById("roleBadge").textContent    = "";
 
@@ -500,33 +513,51 @@ function logout() {
    ════════════════════════════════════════════════════════════════════════ */
 
 async function loadResources() {
-  const emptyEl = document.getElementById("emptyMessage");
+  const emptyEl  = document.getElementById("emptyMessage");
+  const container = document.getElementById("resourcesContainer");
 
-  /* Ocultar el mensaje de estado antes de mostrar skeletons para evitar
-     que ambos coexistan un frame. El skeleton ya cubre el contenedor. */
+  // Estado de carga
   emptyEl.style.display = "none";
+  container.innerHTML = "";
+
   showSkeletons();
 
   try {
-    /* ── Fetch con timeout de 10 segundos ──────────────────────────── */
-    const res = await fetchWithTimeout(_endpoint, { credentials: "omit" }, 10_000);
+    const res = await fetchWithTimeout(
+      _endpoint,
+      { credentials: "omit" },
+      10_000
+    );
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
 
     const data = await res.json();
 
-    if (!Array.isArray(data)) throw new Error("Respuesta inesperada de la API");
+    if (!Array.isArray(data)) {
+      throw new Error("Respuesta inválida de la API");
+    }
 
     _resources = data;
+
     renderResources();
 
   } catch (err) {
+
+    // Limpiar skeletons si falla
+    container.innerHTML = "";
+
     if (err.name === "AbortError") {
-      emptyEl.textContent = "El servidor tardó demasiado. Intentá de nuevo.";
+      emptyEl.textContent =
+        "El servidor tardó demasiado. Intentá de nuevo.";
     } else {
-      emptyEl.textContent = "No se pudieron cargar los recursos. Intentá más tarde.";
+      emptyEl.textContent =
+        "No se pudieron cargar los recursos.";
     }
+
     emptyEl.style.display = "block";
+
     console.warn("[INADI] loadResources:", err.message);
   }
 }
@@ -537,8 +568,12 @@ function renderResources() {
 
   while (container.firstChild) container.removeChild(container.firstChild);
 
-  if (!_resources.length) {
-    empty.textContent   = "No hay recursos agregados todavía.";
+  if (!Array.isArray(_resources)) {
+    return;
+  }
+
+  if (_resources.length === 0) {
+    empty.textContent = "No hay recursos agregados todavía.";
     empty.style.display = "block";
     return;
   }
