@@ -4,6 +4,8 @@ Portal web educativo desarrollado para el **Instituto Nacional de Informática (
 diseñado para centralizar y compartir recursos de aprendizaje de GameMaker Studio 2 con
 estudiantes y docentes del instituto.
 
+## [Acceso al Portal](https://mrluksr.github.io/Inadi-Recursos/)
+
 ---
 
 ## ✨ Características
