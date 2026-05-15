@@ -84,7 +84,7 @@ Para más detalles, ver los comentarios en `index.html` y `app.js`.
 
 | Rol | Persona |
 |---|---|
-| Desarrollo frontend & backend | **Lucas Rangel** |
+| Desarrollo frontend & backend | **Lucas David Rangel Silveira** |
 | Soporte técnico & seguridad| **Thiago Rafael Sosa Olivera** |
 
 Este proyecto utiliza componentes y recursos bajo **licencia MIT**.
