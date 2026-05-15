@@ -120,9 +120,14 @@
 
       </div>
 
-      <button class="logout" id="logoutBtn">
-        Cerrar sesión
-      </button>
+      <div class="topbar-actions">
+        <button class="btn secondary hidden" id="manageUsersBtn">
+          👥 Gestionar Alumnos
+        </button>
+        <button class="logout" id="logoutBtn">
+          Cerrar sesión
+        </button>
+      </div>
 
     </div>
 
@@ -218,6 +223,32 @@
       <div class="modal-buttons">
         <button class="btn secondary" id="cancelDeleteModalBtn">Cancelar</button>
         <button class="btn btn--danger" id="confirmDeleteBtn">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GESTIONAR ALUMNOS -->
+  <div id="manageUsersModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="manageUsersTitle">
+    <div class="modal-content modal-content--wide">
+      <h3 id="manageUsersTitle">Gestionar Alumnos</h3>
+
+      <div class="add-user-section">
+        <div class="input-group">
+          <input type="text" id="newUserName" placeholder="Nombre y apellido del alumno" maxlength="80" autocomplete="off">
+        </div>
+        <button class="btn" id="addUserBtn">Agregar</button>
+      </div>
+      
+      <div id="manageUsersError" class="modal-error" role="alert" aria-live="polite"></div>
+
+      <div class="users-list-container">
+        <ul id="usersList" class="users-list">
+          <!-- Alumnos inyectados dinámicamente -->
+        </ul>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn secondary" id="closeManageUsersBtn">Cerrar</button>
       </div>
     </div>
   </div>

@@ -229,6 +229,17 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
       if (e.target === document.getElementById("modal")) closeModal();
     });
 
+  /* ── Listeners: Modal gestionar alumnos ────────────────────────────── */
+  document.getElementById("manageUsersBtn").addEventListener("click", openManageUsersModal);
+  document.getElementById("closeManageUsersBtn").addEventListener("click", closeManageUsersModal);
+  document.getElementById("addUserBtn").addEventListener("click", addUser);
+  document.getElementById("newUserName").addEventListener("keydown", e => { if (e.key === "Enter") addUser(); });
+
+  document.getElementById("manageUsersModal")
+    .addEventListener("click", e => {
+      if (e.target === document.getElementById("manageUsersModal")) closeManageUsersModal();
+    });
+
   /* ── Listeners: Modal editar ────────────────────────────────────────── */
   document.getElementById("cancelEditModalBtn").addEventListener("click", closeEditModal);
   document.getElementById("saveEditModalBtn").addEventListener("click", saveEditResource);
@@ -258,6 +269,7 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
     closeModal();
     closeEditModal();
     closeDeleteModal();
+    closeManageUsersModal();
   });
 
   /* ── Búsqueda de recursos ────────────────────────────────────────────── */
@@ -382,16 +394,35 @@ async function login() {
   btn.textContent = "Verificando…";
 
   try {
-    /* ── PBKDF2-SHA256 + Salt ──────────────────────────────────────────
-       PBKDF2(password=input, salt=salt_bytes, iter=200 000, PRF=SHA-256)
-       El resultado se compara contra los hashes de config.js.
-       El salt se decodifica de Base64 en runtime y vive solo en memoria.
+    /* ── Validación de Login ─────────────────────────────────────────
+       Si es admin, entra directo. Si es estudiante, consulta a GAS.
        ─────────────────────────────────────────────────────────────── */
     const inputHash = await Security.pbkdf2salted(_salt, rawInput);
-    const hashes    = _cfg.getUserHashes();
     const adminHash = _cfg.getAdminHash();
+    
+    let isAuthorized = false;
+    let isAdmin = false;
 
-    if (!hashes.includes(inputHash)) {
+    if (inputHash === adminHash) {
+      isAuthorized = true;
+      isAdmin = true;
+    } else {
+      // Consultar al backend (GAS) si el hash existe
+      const resp = await fetchWithTimeout(_endpoint, {
+        method: "POST",
+        credentials: "omit",
+        body: JSON.stringify({ action: "login", hash: inputHash })
+      }, 15_000); // 15s timeout por cold start de GAS
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      
+      if (data && data.success) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
       Security.recordFail();
       _showError(errorEl, "Usuario no autorizado.");
       return;
@@ -402,7 +433,7 @@ async function login() {
     errorEl.style.display = "none";
 
     _currentUser = rawInput;
-    _isAdmin     = (inputHash === adminHash);
+    _isAdmin     = isAdmin;
 
     sessionStorage.setItem("__sess_active", "1");
     sessionStorage.setItem("__sess_role", _isAdmin ? "admin" : "student");
@@ -447,6 +478,7 @@ function _applySession() {
     badge.classList.toggle("admin", _isAdmin);
 
     document.getElementById("addButton").classList.toggle("hidden", !_isAdmin);
+    document.getElementById("manageUsersBtn").classList.toggle("hidden", !_isAdmin);
   }, 260);
 }
 
@@ -476,6 +508,7 @@ function logout() {
 
   document.getElementById("username").value          = "";
   document.getElementById("addButton").classList.add("hidden");
+  document.getElementById("manageUsersBtn").classList.add("hidden");
   document.getElementById("loginError").style.display = "none";
   document.getElementById("welcomeText").textContent  = "";
   document.getElementById("roleBadge").textContent    = "";
@@ -881,4 +914,153 @@ async function addResource() {
 function _showError(el, msg) {
   el.textContent   = msg;
   el.style.display = "block";
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   GESTIÓN DE ALUMNOS (solo admin)
+   ════════════════════════════════════════════════════════════════════════ */
+
+function openManageUsersModal() {
+  if (!_isAdmin) return;
+  document.getElementById("manageUsersModal").classList.remove("hidden");
+  document.getElementById("manageUsersError").style.display = "none";
+  document.getElementById("newUserName").value = "";
+  
+  const usersList = document.getElementById("usersList");
+  usersList.innerHTML = `<li style="text-align:center; padding: 15px; opacity: 0.6;">Cargando alumnos...</li>`;
+  
+  loadUsers();
+}
+
+function closeManageUsersModal() {
+  document.getElementById("manageUsersModal").classList.add("hidden");
+}
+
+async function loadUsers() {
+  if (!_isAdmin) return;
+  const errorEl = document.getElementById("manageUsersError");
+  
+  try {
+    const resp = await fetchWithTimeout(_endpoint, {
+      method: "POST",
+      credentials: "omit",
+      body: JSON.stringify({ action: "getUsers", adminHash: _cfg.getAdminHash() })
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    
+    if (data.error) throw new Error(data.error);
+    
+    renderUsersList(data.users || []);
+  } catch (err) {
+    _showError(errorEl, "No se pudieron cargar los alumnos.");
+    console.warn("[INADI] loadUsers:", err.message);
+    document.getElementById("usersList").innerHTML = "";
+  }
+}
+
+function renderUsersList(users) {
+  const usersList = document.getElementById("usersList");
+  usersList.innerHTML = "";
+  
+  if (users.length === 0) {
+    usersList.innerHTML = `<li style="text-align:center; padding: 15px; opacity: 0.6;">No hay alumnos registrados.</li>`;
+    return;
+  }
+  
+  // Sort alphabetically
+  users.sort((a, b) => a.name.localeCompare(b.name));
+  
+  users.forEach(user => {
+    const li = document.createElement("li");
+    li.className = "user-item";
+    
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "user-item-name";
+    nameSpan.textContent = user.name;
+    
+    const delBtn = document.createElement("button");
+    delBtn.className = "user-delete-btn";
+    delBtn.textContent = "Eliminar";
+    delBtn.onclick = () => deleteUser(user.hash, delBtn);
+    
+    li.appendChild(nameSpan);
+    li.appendChild(delBtn);
+    usersList.appendChild(li);
+  });
+}
+
+async function addUser() {
+  if (!_isAdmin) return;
+  
+  const errorEl = document.getElementById("manageUsersError");
+  const inputEl = document.getElementById("newUserName");
+  const btnEl   = document.getElementById("addUserBtn");
+  const name    = inputEl.value.trim();
+  
+  if (!name) {
+    _showError(errorEl, "Ingresá un nombre y apellido.");
+    return;
+  }
+  if (name.length > 80) {
+    _showError(errorEl, "El nombre es demasiado largo.");
+    return;
+  }
+  
+  errorEl.style.display = "none";
+  btnEl.disabled = true;
+  btnEl.textContent = "Guardando...";
+  
+  try {
+    const hash = await Security.pbkdf2salted(_salt, name);
+    
+    const resp = await fetchWithTimeout(_endpoint, {
+      method: "POST",
+      credentials: "omit",
+      body: JSON.stringify({ action: "addUser", name: name, hash: hash, adminHash: _cfg.getAdminHash() })
+    });
+    
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    
+    inputEl.value = "";
+    await loadUsers(); // reload list
+  } catch (err) {
+    _showError(errorEl, "Error al guardar el alumno.");
+    console.warn("[INADI] addUser:", err.message);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = "Agregar";
+  }
+}
+
+async function deleteUser(hash, btnEl) {
+  if (!_isAdmin) return;
+  if (!confirm("¿Seguro que querés eliminar a este alumno?")) return;
+  
+  const errorEl = document.getElementById("manageUsersError");
+  const originalText = btnEl.textContent;
+  btnEl.disabled = true;
+  btnEl.textContent = "...";
+  errorEl.style.display = "none";
+  
+  try {
+    const resp = await fetchWithTimeout(_endpoint, {
+      method: "POST",
+      credentials: "omit",
+      body: JSON.stringify({ action: "deleteUser", hash: hash, adminHash: _cfg.getAdminHash() })
+    });
+    
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    
+    await loadUsers(); // reload list
+  } catch (err) {
+    _showError(errorEl, "Error al eliminar el alumno.");
+    console.warn("[INADI] deleteUser:", err.message);
+    btnEl.disabled = false;
+    btnEl.textContent = originalText;
+  }
 }

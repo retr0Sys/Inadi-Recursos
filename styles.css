@@ -868,6 +868,95 @@ a:hover {
   to   { opacity: 0; transform: translateY(-14px) scale(0.94); }
 }
 
+/* ── MODAL GESTIONAR ALUMNOS ─────────────────────────────── */
+
+.modal-content--wide {
+  max-width: 520px;
+}
+
+.add-user-section {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.add-user-section .input-group {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.add-user-section .btn {
+  width: auto;
+  padding: 14px 20px;
+}
+
+.users-list-container {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 12px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.users-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background var(--transition);
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-item:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.user-item-name {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.user-delete-btn {
+  background: transparent;
+  border: none;
+  color: #fca5a5;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: background var(--transition), color var(--transition);
+}
+
+.user-delete-btn:hover {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.topbar-actions .btn {
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  height: 42px; /* matches .logout height */
+}
+
 /* ── ACCESIBILIDAD: sin animaciones ─────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
