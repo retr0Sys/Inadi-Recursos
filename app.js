@@ -39,10 +39,10 @@ const Security = (function () {
      Usar localStorage en lugar de sessionStorage evita que un atacante
      eluda el bloqueo abriendo una nueva pestaña.
      ──────────────────────────────────────────────────────────────────── */
-  const RATE_KEY    = "__inadi_rl_fails";
+  const RATE_KEY = "__inadi_rl_fails";
   const RATE_TS_KEY = "__inadi_rl_ts";
-  const MAX_FAILS   = 5;
-  const BLOCK_MS    = 30_000;
+  const MAX_FAILS = 5;
+  const BLOCK_MS = 30_000;
 
   function _getFailCount() {
     return parseInt(localStorage.getItem(RATE_KEY) || "0", 10);
@@ -98,10 +98,10 @@ const Security = (function () {
     );
     const bits = await crypto.subtle.deriveBits(
       {
-        name:       "PBKDF2",
-        salt:       enc.encode(saltStr),
+        name: "PBKDF2",
+        salt: enc.encode(saltStr),
         iterations: _cfg.getPbkdf2Iters(),
-        hash:       "SHA-256",
+        hash: "SHA-256",
       },
       keyMaterial,
       256
@@ -193,13 +193,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10_000) {
    ESTADO DE LA APLICACIÓN
    ════════════════════════════════════════════════════════════════════════ */
 
-let _currentUser        = "";
-let _isAdmin            = false;
-let _resources          = [];
-let _endpoint           = "";
-let _salt               = "";
-let _searchQuery        = "";
-let _editingIndex       = null; // índice del recurso en edición
+let _currentUser = "";
+let _isAdmin = false;
+let _resources = [];
+let _endpoint = "";
+let _salt = "";
+let _searchQuery = "";
+let _editingIndex = null; // índice del recurso en edición
 let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
 
 
@@ -210,7 +210,7 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
 
 (function init() {
   _endpoint = _cfg.getEndpoint();
-  _salt     = _cfg.getSalt();
+  _salt = _cfg.getSalt();
 
   /* ── Listeners: Login ───────────────────────────────────────────────── */
   document.getElementById("username")
@@ -232,6 +232,17 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
   /* ── Listeners: Modal editar ────────────────────────────────────────── */
   document.getElementById("cancelEditModalBtn").addEventListener("click", closeEditModal);
   document.getElementById("saveEditModalBtn").addEventListener("click", saveEditResource);
+
+  /* ── Listeners: Modal gestionar alumnos ────────────────────────────── */
+  document.getElementById("manageUsersBtn").addEventListener("click", openManageUsersModal);
+  document.getElementById("closeManageUsersBtn").addEventListener("click", closeManageUsersModal);
+  document.getElementById("addUserBtn").addEventListener("click", addUser);
+  document.getElementById("newUserName").addEventListener("keydown", e => { if (e.key === "Enter") addUser(); });
+
+  document.getElementById("manageUsersModal")
+    .addEventListener("click", e => {
+      if (e.target === document.getElementById("manageUsersModal")) closeManageUsersModal();
+    });
 
   ["editResourceName", "editResourceLink"].forEach(id => {
     document.getElementById(id)
@@ -258,10 +269,11 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
     closeModal();
     closeEditModal();
     closeDeleteModal();
+    if (typeof closeManageUsersModal === "function") closeManageUsersModal();
   });
 
   /* ── Búsqueda de recursos ────────────────────────────────────────────── */
-  const searchInput    = document.getElementById("searchInput");
+  const searchInput = document.getElementById("searchInput");
   const searchClearBtn = document.getElementById("searchClearBtn");
 
   searchInput.addEventListener("input", () => {
@@ -288,13 +300,13 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
   const sessRole = sessionStorage.getItem("__sess_role");
   if (sessionStorage.getItem("__sess_active") && sessUser) {
     _currentUser = sessUser;
-    _isAdmin     = sessRole === "admin";
+    _isAdmin = sessRole === "admin";
     _applySession(() => {
-    loadResources();
+      loadResources();
     });
 
     _resetIdleTimer();
-    }
+  }
 })();
 
 
@@ -304,7 +316,7 @@ let _pendingDeleteIndex = null; // índice del recurso pendiente de borrado
    Auto-logout tras 15 minutos sin actividad del usuario.
    ════════════════════════════════════════════════════════════════════════ */
 const IDLE_TIMEOUT_MS = 15 * 60 * 1_000; // 15 minutos
-let   _idleTimer      = null;
+let _idleTimer = null;
 
 function _resetIdleTimer() {
   clearTimeout(_idleTimer);
@@ -358,7 +370,7 @@ function disableLoginButtonCountdown(btn, errorEl) {
 }
 
 async function login() {
-  const btn     = document.getElementById("loginBtn");
+  const btn = document.getElementById("loginBtn");
   const errorEl = document.getElementById("loginError");
 
   /* ── Rate limiting ─────────────────────────────────────────────────── */
@@ -380,7 +392,7 @@ async function login() {
     return;
   }
 
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = "Verificando…";
 
   try {
@@ -390,7 +402,7 @@ async function login() {
        El salt se decodifica de Base64 en runtime y vive solo en memoria.
        ─────────────────────────────────────────────────────────────── */
     const inputHash = await Security.pbkdf2salted(_salt, rawInput);
-    const hashes    = _cfg.getUserHashes();
+    const hashes = _cfg.getUserHashes();
     const adminHash = _cfg.getAdminHash();
 
     if (!hashes.includes(inputHash)) {
@@ -404,29 +416,29 @@ async function login() {
     errorEl.style.display = "none";
 
     _currentUser = rawInput;
-    _isAdmin     = (inputHash === adminHash);
+    _isAdmin = (inputHash === adminHash);
 
     sessionStorage.setItem("__sess_active", "1");
     sessionStorage.setItem("__sess_role", _isAdmin ? "admin" : "student");
     sessionStorage.setItem("__sess_user", rawInput);
 
     _applySession(() => {
-    loadResources();
+      loadResources();
     });
 
     _resetIdleTimer();
 
   } catch (err) {
 
-      // Evitar mostrar error si la sesión ya fue creada
-      if (!sessionStorage.getItem("__sess_active")) {
-        _showError(errorEl, "Error interno. Intentá de nuevo.");
-      }
+    // Evitar mostrar error si la sesión ya fue creada
+    if (!sessionStorage.getItem("__sess_active")) {
+      _showError(errorEl, "Error interno. Intentá de nuevo.");
+    }
 
-      console.warn("[INADI] login:", err.message);
-  } 
+    console.warn("[INADI] login:", err.message);
+  }
   finally {
-    btn.disabled    = false;
+    btn.disabled = false;
     btn.textContent = "Ingresar";
   }
 
@@ -435,7 +447,7 @@ async function login() {
 }
 
 function _applySession(callback) {
-  let user = (_isAdmin)? "Lucas Rangel" : _currentUser;
+  let user = (_isAdmin) ? "Lucas Rangel" : _currentUser;
 
   // Fade out login
   const loginEl = document.getElementById("loginScreen");
@@ -457,17 +469,18 @@ function _applySession(callback) {
     badge.classList.toggle("admin", _isAdmin);
 
     document.getElementById("addButton").classList.toggle("hidden", !_isAdmin);
+    document.getElementById("manageUsersBtn").classList.toggle("hidden", !_isAdmin);
     document.getElementById("footer").style.display = "none";
     if (callback) callback();
   }, 260);
 }
 
 function logout() {
-  _currentUser        = "";
-  _isAdmin            = false;
-  _resources          = [];
-  _searchQuery        = "";
-  _editingIndex       = null;
+  _currentUser = "";
+  _isAdmin = false;
+  _resources = [];
+  _searchQuery = "";
+  _editingIndex = null;
   _pendingDeleteIndex = null;
 
   Security.clearSession();
@@ -478,24 +491,25 @@ function logout() {
   closeDeleteModal();
 
   /* Restaurar UI de login */
-  const panel     = document.getElementById("panel");
-  const login     = document.getElementById("loginScreen");
+  const panel = document.getElementById("panel");
+  const login = document.getElementById("loginScreen");
   const container = document.getElementById("resourcesContainer");
-  const emptyMsg  = document.getElementById("emptyMessage");
+  const emptyMsg = document.getElementById("emptyMessage");
 
   panel.classList.add("hidden");
   login.classList.remove("hidden");
 
-  document.getElementById("username").value          = "";
+  document.getElementById("username").value = "";
   document.getElementById("addButton").classList.add("hidden");
+  document.getElementById("manageUsersBtn").classList.add("hidden");
   document.getElementById("loginError").style.display = "none";
   document.getElementById("loginError").textContent = "";
-  document.getElementById("welcomeText").textContent  = "";
-  document.getElementById("roleBadge").textContent    = "";
+  document.getElementById("welcomeText").textContent = "";
+  document.getElementById("roleBadge").textContent = "";
 
-  container.innerHTML       = "";
-  emptyMsg.textContent      = "No hay recursos agregados todavía.";
-  emptyMsg.style.display    = "block";
+  container.innerHTML = "";
+  emptyMsg.textContent = "No hay recursos agregados todavía.";
+  emptyMsg.style.display = "block";
 
   /* Resetear búsqueda */
   const si = document.getElementById("searchInput");
@@ -513,7 +527,7 @@ function logout() {
    ════════════════════════════════════════════════════════════════════════ */
 
 async function loadResources() {
-  const emptyEl  = document.getElementById("emptyMessage");
+  const emptyEl = document.getElementById("emptyMessage");
   const container = document.getElementById("resourcesContainer");
 
   // Estado de carga
@@ -564,7 +578,7 @@ async function loadResources() {
 
 function renderResources() {
   const container = document.getElementById("resourcesContainer");
-  const empty     = document.getElementById("emptyMessage");
+  const empty = document.getElementById("emptyMessage");
 
   while (container.firstChild) container.removeChild(container.firstChild);
 
@@ -579,18 +593,18 @@ function renderResources() {
   }
 
   /* ── Filtrado por búsqueda: nombre Y dominio del link ─────── */
-  const query   = _searchQuery.toLowerCase();
+  const query = _searchQuery.toLowerCase();
   const visible = query
     ? _resources.filter(r => {
-        const nombre = String(r.nombre ?? "").toLowerCase();
-        let   domain = "";
-        try { domain = new URL(String(r.link ?? "")).hostname.toLowerCase(); } catch (_) {}
-        return nombre.includes(query) || domain.includes(query);
-      })
+      const nombre = String(r.nombre ?? "").toLowerCase();
+      let domain = "";
+      try { domain = new URL(String(r.link ?? "")).hostname.toLowerCase(); } catch (_) { }
+      return nombre.includes(query) || domain.includes(query);
+    })
     : _resources;
 
   if (!visible.length) {
-    empty.textContent   = `No se encontraron recursos para "${_searchQuery}".`;
+    empty.textContent = `No se encontraron recursos para "${_searchQuery}".`;
     empty.style.display = "block";
     return;
   }
@@ -602,7 +616,7 @@ function renderResources() {
 
     const realIndex = _resources.indexOf(resource);
     const rawNombre = String(resource.nombre ?? "Sin nombre");
-    const rawLink   = String(resource.link ?? "");
+    const rawLink = String(resource.link ?? "");
 
     const card = document.createElement("div");
     card.className = "resource-card";
@@ -692,7 +706,7 @@ function openEditModal(index) {
   _editingIndex = index;
   const resource = _resources[index];
   document.getElementById("editResourceName").value = resource.nombre ?? "";
-  document.getElementById("editResourceLink").value = resource.link   ?? "";
+  document.getElementById("editResourceLink").value = resource.link ?? "";
   document.getElementById("editModalError").style.display = "none";
   document.getElementById("editModal").classList.remove("hidden");
   document.getElementById("editResourceName").focus();
@@ -710,8 +724,8 @@ async function saveEditResource() {
   if (!_isAdmin || _editingIndex === null) return;
 
   const editErr = document.getElementById("editModalError");
-  const name    = document.getElementById("editResourceName").value.trim();
-  const link    = document.getElementById("editResourceLink").value.trim();
+  const name = document.getElementById("editResourceName").value.trim();
+  const link = document.getElementById("editResourceLink").value.trim();
 
   /* ── Validaciones ──────────────────────────────────────────── */
   if (!name) {
@@ -734,14 +748,14 @@ async function saveEditResource() {
   editErr.style.display = "none";
 
   const saveBtn = document.getElementById("saveEditModalBtn");
-  saveBtn.disabled    = true;
+  saveBtn.disabled = true;
   saveBtn.textContent = "Guardando…";
 
   try {
     const resp = await fetchWithTimeout(
       _endpoint,
       {
-        method:      "POST",
+        method: "POST",
         credentials: "omit",
         body: JSON.stringify({ action: "edit", index: _editingIndex, nombre: name, link }),
       },
@@ -761,7 +775,7 @@ async function saveEditResource() {
     }
     console.warn("[INADI] saveEditResource:", err.message);
   } finally {
-    saveBtn.disabled    = false;
+    saveBtn.disabled = false;
     saveBtn.textContent = "Guardar cambios";
   }
 }
@@ -789,11 +803,11 @@ function closeDeleteModal() {
 async function confirmDeleteResource() {
   if (!_isAdmin || _pendingDeleteIndex === null) return;
 
-  const index      = _pendingDeleteIndex;
-  const deleteErr  = document.getElementById("deleteModalError");
+  const index = _pendingDeleteIndex;
+  const deleteErr = document.getElementById("deleteModalError");
   const confirmBtn = document.getElementById("confirmDeleteBtn");
 
-  confirmBtn.disabled    = true;
+  confirmBtn.disabled = true;
   confirmBtn.textContent = "Eliminando…";
 
   /* Animar salida de la tarjeta mientras el fetch viaja al servidor */
@@ -806,7 +820,7 @@ async function confirmDeleteResource() {
       fetchWithTimeout(
         _endpoint,
         {
-          method:      "POST",
+          method: "POST",
           credentials: "omit",
           body: JSON.stringify({ action: "delete", index }),
         },
@@ -826,7 +840,7 @@ async function confirmDeleteResource() {
     _showError(deleteErr, "No se pudo eliminar el recurso. Intentá de nuevo.");
     console.warn("[INADI] confirmDeleteResource:", err.message);
   } finally {
-    confirmBtn.disabled    = false;
+    confirmBtn.disabled = false;
     confirmBtn.textContent = "Eliminar";
   }
 }
@@ -843,8 +857,8 @@ function openModal() {
 
 function closeModal() {
   document.getElementById("modal").classList.add("hidden");
-  document.getElementById("resourceName").value  = "";
-  document.getElementById("resourceLink").value  = "";
+  document.getElementById("resourceName").value = "";
+  document.getElementById("resourceLink").value = "";
   document.getElementById("modalError").style.display = "none";
 }
 
@@ -852,8 +866,8 @@ async function addResource() {
   if (!_isAdmin) return;
 
   const modalErr = document.getElementById("modalError");
-  const name     = document.getElementById("resourceName").value.trim();
-  const link     = document.getElementById("resourceLink").value.trim();
+  const name = document.getElementById("resourceName").value.trim();
+  const link = document.getElementById("resourceLink").value.trim();
 
   if (!name) {
     _showError(modalErr, "El nombre del recurso no puede estar vacío.");
@@ -875,7 +889,7 @@ async function addResource() {
   modalErr.style.display = "none";
 
   const saveBtn = document.querySelector("#modal .btn:not(.secondary)");
-  saveBtn.disabled    = true;
+  saveBtn.disabled = true;
   saveBtn.textContent = "Guardando…";
 
   try {
@@ -883,7 +897,7 @@ async function addResource() {
     const resp = await fetchWithTimeout(
       _endpoint,
       {
-        method:      "POST",
+        method: "POST",
         credentials: "omit",
         body: JSON.stringify({ action: "add", nombre: name, link }),
       },
@@ -903,7 +917,7 @@ async function addResource() {
     }
     console.warn("[INADI] addResource:", err.message);
   } finally {
-    saveBtn.disabled    = false;
+    saveBtn.disabled = false;
     saveBtn.textContent = "Guardar";
   }
 }
@@ -914,6 +928,155 @@ async function addResource() {
    ════════════════════════════════════════════════════════════════════════ */
 
 function _showError(el, msg) {
-  el.textContent   = msg;
+  el.textContent = msg;
   el.style.display = "block";
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   GESTIÓN DE ALUMNOS (solo admin)
+   ════════════════════════════════════════════════════════════════════════ */
+
+function openManageUsersModal() {
+  if (!_isAdmin) return;
+  document.getElementById("manageUsersModal").classList.remove("hidden");
+  document.getElementById("manageUsersError").style.display = "none";
+  document.getElementById("newUserName").value = "";
+
+  const usersList = document.getElementById("usersList");
+  usersList.innerHTML = `<li style="text-align:center; padding: 15px; opacity: 0.6;">Cargando alumnos...</li>`;
+
+  loadUsers();
+}
+
+function closeManageUsersModal() {
+  document.getElementById("manageUsersModal").classList.add("hidden");
+}
+
+async function loadUsers() {
+  if (!_isAdmin) return;
+  const errorEl = document.getElementById("manageUsersError");
+
+  try {
+    const resp = await fetchWithTimeout(_endpoint, {
+      method: "POST",
+      credentials: "omit",
+      body: JSON.stringify({ action: "getUsers", adminHash: _cfg.getAdminHash() })
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    if (data.error) throw new Error(data.error);
+
+    renderUsersList(data.users || []);
+  } catch (err) {
+    _showError(errorEl, "No se pudieron cargar los alumnos.");
+    console.warn("[INADI] loadUsers:", err.message);
+    document.getElementById("usersList").innerHTML = "";
+  }
+}
+
+function renderUsersList(users) {
+  const usersList = document.getElementById("usersList");
+  usersList.innerHTML = "";
+
+  if (users.length === 0) {
+    usersList.innerHTML = `<li style="text-align:center; padding: 15px; opacity: 0.6;">No hay alumnos registrados.</li>`;
+    return;
+  }
+
+  // Sort alphabetically
+  users.sort((a, b) => a.name.localeCompare(b.name));
+
+  users.forEach(user => {
+    const li = document.createElement("li");
+    li.className = "user-item";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "user-item-name";
+    nameSpan.textContent = user.name;
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "user-delete-btn";
+    delBtn.textContent = "Eliminar";
+    delBtn.onclick = () => deleteUser(user.hash, delBtn);
+
+    li.appendChild(nameSpan);
+    li.appendChild(delBtn);
+    usersList.appendChild(li);
+  });
+}
+
+async function addUser() {
+  if (!_isAdmin) return;
+
+  const errorEl = document.getElementById("manageUsersError");
+  const inputEl = document.getElementById("newUserName");
+  const btnEl = document.getElementById("addUserBtn");
+  const name = inputEl.value.trim();
+
+  if (!name) {
+    _showError(errorEl, "Ingresá un nombre y apellido.");
+    return;
+  }
+  if (name.length > 80) {
+    _showError(errorEl, "El nombre es demasiado largo.");
+    return;
+  }
+
+  errorEl.style.display = "none";
+  btnEl.disabled = true;
+  btnEl.textContent = "Guardando...";
+
+  try {
+    const hash = await Security.pbkdf2salted(_salt, name);
+
+    const resp = await fetchWithTimeout(_endpoint, {
+      method: "POST",
+      credentials: "omit",
+      body: JSON.stringify({ action: "addUser", name: name, hash: hash, adminHash: _cfg.getAdminHash() })
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    inputEl.value = "";
+    await loadUsers(); // reload list
+  } catch (err) {
+    _showError(errorEl, "Error al guardar el alumno.");
+    console.warn("[INADI] addUser:", err.message);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = "Agregar";
+  }
+}
+
+async function deleteUser(hash, btnEl) {
+  if (!_isAdmin) return;
+  if (!confirm("¿Seguro que querés eliminar a este alumno?")) return;
+
+  const errorEl = document.getElementById("manageUsersError");
+  const originalText = btnEl.textContent;
+  btnEl.disabled = true;
+  btnEl.textContent = "...";
+  errorEl.style.display = "none";
+
+  try {
+    const resp = await fetchWithTimeout(_endpoint, {
+      method: "POST",
+      credentials: "omit",
+      body: JSON.stringify({ action: "deleteUser", hash: hash, adminHash: _cfg.getAdminHash() })
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    await loadUsers(); // reload list
+  } catch (err) {
+    _showError(errorEl, "Error al eliminar el alumno.");
+    console.warn("[INADI] deleteUser:", err.message);
+    btnEl.disabled = false;
+    btnEl.textContent = originalText;
+  }
 }
